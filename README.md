@@ -39,19 +39,19 @@ python3 -m http.server 8000
 
 Then open your browser and go to: **http://localhost:8000**
 
-### Option 2: Using Node.js
+### Option 2: Using Yarn
 ```bash
 # Navigate to the game directory
-cd "Balloon Pop Party game"
+cd Little-Archer-Balloon-Hunt
 
-# Install a simple server (first time only)
-npm install -g http-server
+# Install dependencies (first time only)
+yarn install
 
-# Start the server
-http-server -p 8000
+# Start the development server
+yarn start
 ```
 
-Then open your browser and go to: **http://localhost:8000**
+The game will automatically open in your browser at **http://localhost:8080**
 
 ### Option 3: Direct File Opening
 Simply open the `index.html` file directly in your web browser (Chrome, Firefox, Safari, Edge).
