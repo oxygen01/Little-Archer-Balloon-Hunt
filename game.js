@@ -94,6 +94,12 @@ let missedShots = 0;
 // Arrow trails
 let arrowTrails = [];
 
+// Archer animation
+let archerOriginalX = -11;
+let archerOriginalY = 0;
+let isArcherDancing = false;
+let isArcherRecoiling = false;
+
 function initScene() {
   // Create scene with sky blue background
   scene = new THREE.Scene();
@@ -340,6 +346,8 @@ function createArcher() {
 
   // Position further to the left
   archerGroup.position.set(-11, 0, 0);
+  archerOriginalX = -11; // Store original X position
+  archerOriginalY = 0; // Store original Y position
 
   scene.add(archerGroup);
   archer = archerGroup;
@@ -539,7 +547,9 @@ function shootArrow() {
 // ANIMATE ARCHER SHOOTING
 // ============================================
 function animateArcherShoot() {
-  const originalX = archer.position.x;
+  if (isArcherRecoiling) return; // Prevent overlapping recoil animations
+
+  isArcherRecoiling = true;
   const recoilAmount = -0.3;
   const duration = 200; // ms
   const startTime = performance.now();
@@ -549,11 +559,12 @@ function animateArcherShoot() {
     const progress = elapsed / duration;
 
     if (progress >= 1) {
-      archer.position.x = originalX;
+      archer.position.x = archerOriginalX; // Always return to original X position
+      isArcherRecoiling = false;
     } else {
       // Recoil back, then forward
       const recoil = Math.sin(progress * Math.PI) * recoilAmount;
-      archer.position.x = originalX + recoil;
+      archer.position.x = archerOriginalX + recoil;
       requestAnimationFrame(animate);
     }
   }
@@ -713,9 +724,6 @@ class Balloon {
 
     // Increment balloon counter
     incrementBalloonCounter();
-
-    // Archer victory dance
-    doArcherDance();
 
     // Remove balloon from scene
     this.destroy();
@@ -1338,16 +1346,17 @@ function resetStreak() {
 // ARCHER VICTORY DANCE
 // ============================================
 function doArcherDance() {
-  if (!archer) return;
+  if (!archer || isArcherDancing) return;
 
-  const originalY = archer.position.y;
+  isArcherDancing = true;
   const bounces = 3;
   const duration = 300;
 
   let bounceCount = 0;
   function bounce() {
     if (bounceCount >= bounces) {
-      archer.position.y = originalY;
+      archer.position.y = archerOriginalY; // Always return to original position
+      isArcherDancing = false;
       return;
     }
 
@@ -1362,7 +1371,7 @@ function doArcherDance() {
 
       const progress = elapsed / duration;
       const bounceHeight = Math.sin(progress * Math.PI) * 0.3;
-      archer.position.y = originalY + bounceHeight;
+      archer.position.y = archerOriginalY + bounceHeight;
 
       requestAnimationFrame(animateBounce);
     }
