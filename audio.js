@@ -4,13 +4,20 @@
 
 let audioContext;
 let isMuted = false;
+let backgroundMusic = null;
 
 function initAudio() {
+    // Create background music audio element
+    backgroundMusic = new Audio('bg-video-game-music.mp3');
+    backgroundMusic.loop = true;
+    backgroundMusic.volume = 0.2; // 20% volume
+
     // Create AudioContext on first user interaction (browser policy)
     document.addEventListener('keydown', () => {
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             console.log('🔊 Audio initialized!');
+            startBackgroundMusic();
         }
     }, { once: true });
 }
@@ -81,11 +88,161 @@ function speakLetter(letter) {
 }
 
 // ============================================
+// BACKGROUND MUSIC (MP3 file at 20% volume)
+// ============================================
+function startBackgroundMusic() {
+    if (!backgroundMusic || isMuted) return;
+
+    backgroundMusic.play().catch(err => {
+        console.log('Background music autoplay blocked:', err);
+    });
+
+    console.log('🎵 Background music started!');
+}
+
+function stopBackgroundMusic() {
+    if (backgroundMusic) {
+        backgroundMusic.pause();
+        backgroundMusic.currentTime = 0;
+    }
+}
+
+// ============================================
+// BALLOON LAUNCH SOUND (Boing!)
+// ============================================
+function playLaunchSound() {
+    if (isMuted || !audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    // Bouncy "boing" - ascending then descending pitch
+    oscillator.type = 'sine';
+    const now = audioContext.currentTime;
+
+    oscillator.frequency.setValueAtTime(200, now);
+    oscillator.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+    oscillator.frequency.exponentialRampToValueAtTime(150, now + 0.2);
+
+    gainNode.gain.setValueAtTime(0.15, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+
+    oscillator.start(now);
+    oscillator.stop(now + 0.2);
+}
+
+// ============================================
+// BALLOON ESCAPE SOUND (Happy chime)
+// ============================================
+function playEscapeSound() {
+    if (isMuted || !audioContext) return;
+
+    // Play two notes in harmony (major third)
+    const frequencies = [659.25, 830.61]; // E5 and G#5
+    const now = audioContext.currentTime;
+
+    frequencies.forEach((freq, i) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.type = 'sine';
+        oscillator.frequency.value = freq;
+
+        gainNode.gain.setValueAtTime(0.15, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+
+        oscillator.start(now + i * 0.05); // Slight delay between notes
+        oscillator.stop(now + 0.4);
+    });
+}
+
+// ============================================
+// ARROW MISS SOUND (Gentle whoosh)
+// ============================================
+function playMissSound() {
+    if (isMuted || !audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    // Subtle descending whoosh
+    oscillator.type = 'sawtooth';
+    const now = audioContext.currentTime;
+
+    oscillator.frequency.setValueAtTime(300, now);
+    oscillator.frequency.exponentialRampToValueAtTime(100, now + 0.12);
+
+    gainNode.gain.setValueAtTime(0.08, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+
+    oscillator.start(now);
+    oscillator.stop(now + 0.12);
+}
+
+// ============================================
+// COMBO HIT SOUND (Ascending celebration)
+// ============================================
+let comboCount = 0;
+let comboTimeout = null;
+
+function playComboSound() {
+    if (isMuted || !audioContext) return;
+
+    // Reset combo timer
+    clearTimeout(comboTimeout);
+    comboCount++;
+
+    // Play ascending tone based on combo count (capped at 5)
+    const baseFreq = 500;
+    const pitch = baseFreq + (Math.min(comboCount, 5) * 100);
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.type = 'square';
+    oscillator.frequency.value = pitch;
+
+    const now = audioContext.currentTime;
+    gainNode.gain.setValueAtTime(0.2, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+    oscillator.start(now);
+    oscillator.stop(now + 0.1);
+
+    // Reset combo after 2 seconds of no hits
+    comboTimeout = setTimeout(() => {
+        comboCount = 0;
+    }, 2000);
+}
+
+// ============================================
 // MUTE TOGGLE
 // ============================================
 const muteBtn = document.getElementById('muteBtn');
 muteBtn.addEventListener('click', () => {
     isMuted = !isMuted;
     muteBtn.textContent = isMuted ? '🔇' : '🔊';
+
+    // Control background music
+    if (backgroundMusic) {
+        if (isMuted) {
+            backgroundMusic.pause();
+        } else {
+            backgroundMusic.play().catch(err => console.log('Music play error:', err));
+        }
+    }
+
     console.log(isMuted ? '🔇 Muted' : '🔊 Unmuted');
 });

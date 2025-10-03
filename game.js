@@ -376,6 +376,7 @@ class Arrow {
 
     // Check if arrow went off screen (right side)
     if (this.mesh.position.x > 15) {
+      playMissSound(); // Gentle whoosh for missing
       this.destroy();
       return true; // Signal removal (miss!)
     }
@@ -510,7 +511,7 @@ class Balloon {
       // Create confetti BURST when reaching top
       const popPosition = this.mesh.position.clone();
       createConfettiBurst(popPosition);
-      playPopSound();
+      playEscapeSound(); // Happy chime for balloon escaping
       this.destroy();
       return true; // Signal for removal from array
     }
@@ -539,8 +540,9 @@ class Balloon {
     // Create emoji confetti explosion at balloon position
     createEmojiConfetti(popPosition);
 
-    // Play happy pop sound
+    // Play happy pop sound and combo sound
     playPopSound();
+    playComboSound();
 
     // Remove balloon from scene
     this.destroy();
@@ -585,6 +587,9 @@ function spawnBalloon() {
   // Create new balloon
   const balloon = new Balloon(color);
   balloons.push(balloon);
+
+  // Play launch sound
+  playLaunchSound();
 
   console.log(`🎈 Spawned balloon`);
 }
