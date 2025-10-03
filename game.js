@@ -102,6 +102,12 @@ let archerOriginalY = 0;
 let isArcherDancing = false;
 let isArcherRecoiling = false;
 
+// Celebration Character
+let celebrationCharacter = null;
+let characterOriginalX = -11;
+let characterOriginalY = -5;
+let isCharacterCelebrating = false;
+
 function initScene() {
   // Create scene with sky blue background
   scene = new THREE.Scene();
@@ -136,6 +142,9 @@ function initScene() {
 
   // Create archer
   createArcher();
+
+  // Create celebration character
+  createCelebrationCharacter();
 
   console.log("🎮 Scene initialized!");
 }
@@ -358,6 +367,69 @@ function createArcher() {
 }
 
 // ============================================
+// CELEBRATION CHARACTER
+// ============================================
+function createCelebrationCharacter() {
+  // Load monkey sprite image
+  const textureLoader = new THREE.TextureLoader();
+
+  textureLoader.load(
+    'monkey-sprite.png', // Place your downloaded monkey sprite here
+    (texture) => {
+      // Success - create sprite with loaded texture
+      const spriteMaterial = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+      });
+      const sprite = new THREE.Sprite(spriteMaterial);
+      sprite.scale.set(3.0, 3.0, 1); // Slightly larger for visibility
+
+      // Position at bottom-right
+      sprite.position.set(characterOriginalX, characterOriginalY, 1);
+
+      scene.add(sprite);
+      celebrationCharacter = sprite;
+
+      console.log("🐵 Celebration monkey character loaded!");
+    },
+    undefined, // Progress callback (optional)
+    (error) => {
+      // Error - fallback to emoji
+      console.warn("Could not load monkey sprite, using emoji fallback:", error);
+      createCharacterFallback();
+    }
+  );
+}
+
+// Fallback function if image fails to load
+function createCharacterFallback() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+
+  // Draw monkey emoji as fallback
+  ctx.font = "200px Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("🐵", 128, 128);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const spriteMaterial = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+  });
+  const sprite = new THREE.Sprite(spriteMaterial);
+  sprite.scale.set(2.5, 2.5, 1);
+
+  sprite.position.set(characterOriginalX, characterOriginalY, 1);
+  scene.add(sprite);
+  celebrationCharacter = sprite;
+
+  console.log("🐵 Celebration character created (emoji fallback)!");
+}
+
+// ============================================
 // ARROW CLASS
 // ============================================
 class Arrow {
@@ -575,6 +647,55 @@ function animateArcherShoot() {
 }
 
 // ============================================
+// CHARACTER CELEBRATION ANIMATION
+// ============================================
+function characterCelebrate() {
+  if (!celebrationCharacter || isCharacterCelebrating) return;
+
+  isCharacterCelebrating = true;
+  const duration = 400; // ms
+  const startTime = performance.now();
+
+  // Pick random animation type
+  const animations = ['jump', 'spin', 'shake', 'pulse'];
+  const animationType = animations[Math.floor(Math.random() * animations.length)];
+
+  function animate() {
+    const elapsed = performance.now() - startTime;
+    const progress = elapsed / duration;
+
+    if (progress >= 1) {
+      // Return to original position and scale
+      celebrationCharacter.position.x = characterOriginalX;
+      celebrationCharacter.position.y = characterOriginalY;
+      celebrationCharacter.scale.set(2.5, 2.5, 1);
+      celebrationCharacter.rotation.z = 0;
+      isCharacterCelebrating = false;
+    } else {
+      if (animationType === 'jump') {
+        // Jump up and down
+        const jumpHeight = Math.sin(progress * Math.PI) * 1.5;
+        celebrationCharacter.position.y = characterOriginalY + jumpHeight;
+      } else if (animationType === 'spin') {
+        // Spin 360 degrees
+        celebrationCharacter.rotation.z = progress * Math.PI * 2;
+      } else if (animationType === 'shake') {
+        // Shake left and right
+        const shakeAmount = Math.sin(progress * Math.PI * 8) * 0.3;
+        celebrationCharacter.position.x = characterOriginalX + shakeAmount;
+      } else if (animationType === 'pulse') {
+        // Scale up and down
+        const pulseScale = 1 + Math.sin(progress * Math.PI) * 0.3;
+        celebrationCharacter.scale.set(2.5 * pulseScale, 2.5 * pulseScale, 1);
+      }
+      requestAnimationFrame(animate);
+    }
+  }
+
+  animate();
+}
+
+// ============================================
 // BALLOON CLASS
 // ============================================
 class Balloon {
@@ -719,6 +840,9 @@ class Balloon {
     // Play happy pop sound and combo sound
     playPopSound();
     playComboSound();
+
+    // Celebrate with character animation
+    characterCelebrate();
 
     // Update streak
     currentStreak++;
