@@ -101,8 +101,20 @@
             display: flex;
         }
 
+        #confettiCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 201;
+        }
+
         #celebrationText {
             text-align: center;
+            position: relative;
+            z-index: 202;
         }
 
         #celebrationName {
@@ -211,6 +223,7 @@
 
     <!-- Birthday Celebration Overlay -->
     <div id="celebration">
+        <canvas id="confettiCanvas"></canvas>
         <div id="celebrationText">
             <div id="celebrationName">TIMO</div>
             <div id="celebrationAge">3</div>
@@ -222,7 +235,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
     <!-- Game scripts -->
-    <script src="audio.js?v=4"></script>
-    <script src="game.js?v=4"></script>
+    <script src="audio.js?v=5"></script>
+    <script src="game.js?v=5"></script>
 </body>
 </html>

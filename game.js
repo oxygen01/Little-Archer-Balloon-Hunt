@@ -67,6 +67,12 @@ let isCelebrating = false;
 const balloonCounterEl = document.getElementById('balloonCounter');
 const celebrationEl = document.getElementById('celebration');
 
+// 2D Confetti Canvas
+const confettiCanvas = document.getElementById('confettiCanvas');
+const confettiCtx = confettiCanvas.getContext('2d');
+let confettiParticles = [];
+let confettiAnimationId = null;
+
 function initScene() {
   // Create scene with sky blue background
   scene = new THREE.Scene();
@@ -792,26 +798,141 @@ function triggerCelebration() {
   // Show celebration overlay
   celebrationEl.classList.add('active');
 
-  // Create confetti from all directions
-  createCelebrationConfetti();
+  // Setup confetti canvas
+  confettiCanvas.width = window.innerWidth;
+  confettiCanvas.height = window.innerHeight;
+
+  // Create 2D confetti particles
+  create2DConfetti();
+
+  // Start confetti animation
+  animate2DConfetti();
 }
 
-function createCelebrationConfetti() {
-  // Create confetti bursts from all 4 edges
-  const edges = [
-    { x: -10, y: 0 },  // Left
-    { x: 10, y: 0 },   // Right
-    { x: 0, y: 10 },   // Top
-    { x: 0, y: -8 },   // Bottom
-  ];
+// ============================================
+// 2D CANVAS CONFETTI SYSTEM
+// ============================================
+class ConfettiParticle {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.size = Math.random() * 12 + 8; // 8-20px
+    this.speedX = (Math.random() - 0.5) * 8;
+    this.speedY = Math.random() * -15 - 5; // Launch upward
+    this.gravity = 0.5;
+    this.rotation = Math.random() * 360;
+    this.rotationSpeed = (Math.random() - 0.5) * 15;
+    this.color = this.randomColor();
+    this.opacity = 1;
+    this.shape = Math.random() > 0.5 ? 'rect' : 'circle';
+  }
 
-  edges.forEach((edge) => {
-    for (let i = 0; i < 30; i++) {
-      setTimeout(() => {
-        createConfettiBurst(new THREE.Vector3(edge.x, edge.y, 0));
-      }, i * 50);
+  randomColor() {
+    const colors = [
+      '#FF0000', '#FF7F00', '#FFFF00', '#00FF00',
+      '#0000FF', '#4B0082', '#9400D3', '#FF1493',
+      '#00FFFF', '#FF69B4', '#FFD700', '#FF6347'
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+  }
+
+  update() {
+    this.speedY += this.gravity;
+    this.x += this.speedX;
+    this.y += this.speedY;
+    this.rotation += this.rotationSpeed;
+
+    // Fade out when falling
+    if (this.y > window.innerHeight / 2) {
+      this.opacity -= 0.01;
     }
+  }
+
+  draw(ctx) {
+    ctx.save();
+    ctx.globalAlpha = this.opacity;
+    ctx.translate(this.x, this.y);
+    ctx.rotate((this.rotation * Math.PI) / 180);
+    ctx.fillStyle = this.color;
+
+    if (this.shape === 'rect') {
+      ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+    } else {
+      ctx.beginPath();
+      ctx.arc(0, 0, this.size / 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  isDead() {
+    return this.opacity <= 0 || this.y > window.innerHeight + 50;
+  }
+}
+
+function create2DConfetti() {
+  confettiParticles = [];
+
+  // Create initial burst from center
+  for (let i = 0; i < 150; i++) {
+    confettiParticles.push(
+      new ConfettiParticle(
+        window.innerWidth / 2 + (Math.random() - 0.5) * 200,
+        window.innerHeight / 2
+      )
+    );
+  }
+
+  // Continuous confetti from top
+  setInterval(() => {
+    if (isCelebrating) {
+      for (let i = 0; i < 5; i++) {
+        confettiParticles.push(
+          new ConfettiParticle(
+            Math.random() * window.innerWidth,
+            -20
+          )
+        );
+      }
+    }
+  }, 100);
+
+  // Side bursts
+  setInterval(() => {
+    if (isCelebrating) {
+      // Left side
+      for (let i = 0; i < 3; i++) {
+        const particle = new ConfettiParticle(0, Math.random() * window.innerHeight);
+        particle.speedX = Math.random() * 10 + 5;
+        confettiParticles.push(particle);
+      }
+      // Right side
+      for (let i = 0; i < 3; i++) {
+        const particle = new ConfettiParticle(window.innerWidth, Math.random() * window.innerHeight);
+        particle.speedX = -(Math.random() * 10 + 5);
+        confettiParticles.push(particle);
+      }
+    }
+  }, 200);
+}
+
+function animate2DConfetti() {
+  if (!isCelebrating) {
+    cancelAnimationFrame(confettiAnimationId);
+    return;
+  }
+
+  confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+
+  // Update and draw all particles
+  confettiParticles = confettiParticles.filter(particle => {
+    particle.update();
+    particle.draw(confettiCtx);
+    return !particle.isDead();
   });
+
+  confettiAnimationId = requestAnimationFrame(animate2DConfetti);
 }
 
 function resetGame() {
@@ -823,6 +944,14 @@ function resetGame() {
 
   // Hide celebration overlay
   celebrationEl.classList.remove('active');
+
+  // Stop confetti animation
+  if (confettiAnimationId) {
+    cancelAnimationFrame(confettiAnimationId);
+    confettiAnimationId = null;
+  }
+  confettiParticles = [];
+  confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
 
   // Clear all balloons and arrows
   balloons.forEach(balloon => balloon.destroy());
