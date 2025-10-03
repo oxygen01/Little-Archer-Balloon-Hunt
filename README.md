@@ -9,14 +9,22 @@ Colorful balloons float up from the bottom of the screen. Press ANY key on your 
 ## ✨ Features
 
 - 🏹 **Simple Controls** - Press any key to shoot arrows
-- 🎈 **Colorful Balloons** - Bright, shiny balloons float upward
+- 🎈 **Colorful Balloons** - Bright, shiny balloons in multiple sizes float upward
 - 🎯 **Archery Mechanics** - Arrows fly horizontally, balloons float vertically
+- ⚡ **Power-Up Arrows** - Every 5th arrow gets special abilities (Big, Fast, or Rainbow!)
+- 🌈 **Arrow Trails** - Colorful particle trails follow arrows
+- ✨ **Sparkle Effects** - Star bursts when balloons pop
+- 💫 **Balloon Glow** - Balloons glow when arrows get close
 - 🎉 **Emoji Confetti** - Big emoji appears when arrows hit balloons
 - 💥 **Confetti Burst** - Multiple small emojis explode when balloons reach the top
-- 🎵 **Sound Effects** - Pop sounds and arrow whoosh sounds
+- 🎵 **Background Music** - Cheerful looping soundtrack
+- 🎵 **Sound Effects** - Pop sounds, arrow whoosh, streak celebrations
+- 🏆 **Streak System** - Musical celebrations for 3, 5, and 7 consecutive hits
+- 🎂 **Birthday Celebration** - Special animation when reaching 10 balloons with Timo's name
 - 🔇 **Mute Button** - Easy sound toggle for parents
 - 🌄 **Beautiful Background** - Green ground, mountains, trees, and clouds
 - 🎨 **No Losing** - Pure fun with no failure states
+- 🔢 **Countdown Intro** - Exciting 3-2-1-GO! countdown to start
 
 ## 🚀 How to Start
 
@@ -76,18 +84,25 @@ Simply open the `index.html` file directly in your web browser (Chrome, Firefox,
 
 ## 📁 Files
 
-- `index.html` - Main game page
-- `game.js` - Game logic and Three.js scene
-- `audio.js` - Sound effects system
+- `index.html` - Main game page with UI overlay
+- `game.js` - Game logic, Three.js scene, and enhanced features
+- `audio.js` - Sound effects system with synthesized sounds
+- `bg-video-game-music.mp3` - Background music (Pixabay)
+- `happy-birthday.mp3` - Victory celebration music (Pixabay)
 - `README.md` - This file
+- `CLAUDE.md` - Project documentation for Claude Code
 
 ## 🔧 Technical Details
 
 - **Framework**: Three.js (3D graphics library)
-- **Audio**: Web Audio API (synthesized sounds)
+- **Audio**:
+  - Web Audio API for synthesized sound effects
+  - HTML5 Audio API for background music
+  - Background music files sourced from [Pixabay](https://pixabay.com/)
 - **Controls**: Keyboard input (any key)
 - **Target Age**: 3+ years old
 - **Browser**: Modern browsers (Chrome, Firefox, Safari, Edge)
+- **Special Features**: Power-ups, particle effects, streak system, birthday celebration
 
 ## 🎓 Educational Value
 
@@ -112,9 +127,20 @@ Simply open the `index.html` file directly in your web browser (Chrome, Firefox,
 - Try a different browser
 - Reduce screen size
 
-## 📝 License
+## 📝 License & Attribution
 
+### Game Code
 Free to use and modify for personal and educational purposes.
+
+### Audio Files
+Background music files (`bg-video-game-music.mp3`, `happy-birthday.mp3`) are sourced from **[Pixabay](https://pixabay.com/)**.
+
+**Pixabay Content License:**
+- ✅ Free for commercial and non-commercial use
+- ✅ No attribution required (but appreciated)
+- ❌ Cannot be redistributed as standalone audio files
+
+For more details, see: [Pixabay License](https://pixabay.com/service/license-summary/)
 
 ---
 
