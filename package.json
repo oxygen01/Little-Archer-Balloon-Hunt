@@ -1,0 +1,19 @@
+{
+  "name": "little-archer-balloon-hunt",
+  "version": "1.0.0",
+  "description": "Balloon Pop Party - A fun game for kids",
+  "main": "game.js",
+  "scripts": {
+    "start": "npx http-server -p 8080 -o"
+  },
+  "keywords": [
+    "game",
+    "balloons",
+    "three.js"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "http-server": "^14.1.1"
+  }
+}
