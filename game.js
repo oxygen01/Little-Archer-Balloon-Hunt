@@ -526,7 +526,7 @@ class Balloon {
       // Create confetti BURST when reaching top
       const popPosition = this.mesh.position.clone();
       createConfettiBurst(popPosition);
-      playEscapeSound(); // Happy chime for balloon escaping
+      // No sound when balloon escapes to the top
       this.destroy();
       return true; // Signal for removal from array
     }
