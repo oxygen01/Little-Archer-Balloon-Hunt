@@ -5,12 +5,18 @@
 let audioContext;
 let isMuted = false;
 let backgroundMusic = null;
+let victoryMusic = null;
 
 function initAudio() {
     // Create background music audio element
     backgroundMusic = new Audio('bg-video-game-music.mp3');
     backgroundMusic.loop = true;
     backgroundMusic.volume = 0.2; // 20% volume
+
+    // Create victory music audio element
+    victoryMusic = new Audio('happy-birthday.mp3');
+    victoryMusic.loop = false;
+    victoryMusic.volume = 0.5; // 50% volume for celebration
 
     // Create AudioContext on first user interaction (browser policy)
     document.addEventListener('keydown', () => {
@@ -228,6 +234,33 @@ function playComboSound() {
 }
 
 // ============================================
+// VICTORY MUSIC (Birthday Celebration)
+// ============================================
+function playVictoryMusic() {
+    if (!victoryMusic || isMuted) return;
+
+    // Stop background music
+    if (backgroundMusic) {
+        backgroundMusic.pause();
+    }
+
+    // Play victory music from beginning
+    victoryMusic.currentTime = 0;
+    victoryMusic.play().catch(err => {
+        console.log('Victory music play error:', err);
+    });
+
+    console.log('🎉 Victory music playing!');
+}
+
+function stopVictoryMusic() {
+    if (victoryMusic) {
+        victoryMusic.pause();
+        victoryMusic.currentTime = 0;
+    }
+}
+
+// ============================================
 // MUTE TOGGLE
 // ============================================
 const muteBtn = document.getElementById('muteBtn');
@@ -241,6 +274,15 @@ muteBtn.addEventListener('click', () => {
             backgroundMusic.pause();
         } else {
             backgroundMusic.play().catch(err => console.log('Music play error:', err));
+        }
+    }
+
+    // Control victory music
+    if (victoryMusic && victoryMusic.currentTime > 0) {
+        if (isMuted) {
+            victoryMusic.pause();
+        } else {
+            victoryMusic.play().catch(err => console.log('Music play error:', err));
         }
     }
 

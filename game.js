@@ -58,6 +58,15 @@ let balloons = []; // Active balloon objects
 let archer = null; // Archer character
 let activeArrows = []; // Arrows currently in flight
 
+// ============================================
+// BIRTHDAY CELEBRATION TRACKING
+// ============================================
+let balloonsPopped = 0;
+const BALLOONS_TO_WIN = 10;
+let isCelebrating = false;
+const balloonCounterEl = document.getElementById('balloonCounter');
+const celebrationEl = document.getElementById('celebration');
+
 function initScene() {
   // Create scene with sky blue background
   scene = new THREE.Scene();
@@ -544,6 +553,9 @@ class Balloon {
     playPopSound();
     playComboSound();
 
+    // Increment balloon counter
+    incrementBalloonCounter();
+
     // Remove balloon from scene
     this.destroy();
   }
@@ -756,9 +768,90 @@ function createConfettiBurst(position) {
 }
 
 // ============================================
+// BIRTHDAY CELEBRATION FUNCTIONS
+// ============================================
+function incrementBalloonCounter() {
+  if (isCelebrating) return;
+
+  balloonsPopped++;
+  balloonCounterEl.textContent = `🎈 ${balloonsPopped}/${BALLOONS_TO_WIN}`;
+
+  // Check if player won
+  if (balloonsPopped >= BALLOONS_TO_WIN) {
+    triggerCelebration();
+  }
+}
+
+function triggerCelebration() {
+  isCelebrating = true;
+  console.log('🎉 BIRTHDAY CELEBRATION! 🎉');
+
+  // Stop background music and play victory music
+  playVictoryMusic();
+
+  // Show celebration overlay
+  celebrationEl.classList.add('active');
+
+  // Create confetti from all directions
+  createCelebrationConfetti();
+}
+
+function createCelebrationConfetti() {
+  // Create confetti bursts from all 4 edges
+  const edges = [
+    { x: -10, y: 0 },  // Left
+    { x: 10, y: 0 },   // Right
+    { x: 0, y: 10 },   // Top
+    { x: 0, y: -8 },   // Bottom
+  ];
+
+  edges.forEach((edge) => {
+    for (let i = 0; i < 30; i++) {
+      setTimeout(() => {
+        createConfettiBurst(new THREE.Vector3(edge.x, edge.y, 0));
+      }, i * 50);
+    }
+  });
+}
+
+function resetGame() {
+  console.log('🔄 Resetting game...');
+
+  isCelebrating = false;
+  balloonsPopped = 0;
+  balloonCounterEl.textContent = `🎈 0/${BALLOONS_TO_WIN}`;
+
+  // Hide celebration overlay
+  celebrationEl.classList.remove('active');
+
+  // Clear all balloons and arrows
+  balloons.forEach(balloon => balloon.destroy());
+  balloons = [];
+  activeArrows.forEach(arrow => arrow.destroy());
+  activeArrows = [];
+
+  // Stop victory music and resume background music
+  stopVictoryMusic();
+  if (!isMuted && audioContext) {
+    startBackgroundMusic();
+  }
+
+  console.log('✅ Game reset! Ready to play again!');
+}
+
+// ============================================
 // INPUT HANDLING (KEYBOARD - ANY KEY!)
 // ============================================
 function handleKeyPress(event) {
+  // ESC key to reset game during celebration
+  if (event.key === 'Escape' && isCelebrating) {
+    resetGame();
+    return;
+  }
+
+  // Don't allow shooting during celebration
+  if (isCelebrating) return;
+
   // Prevent default behavior (like space scrolling page)
   event.preventDefault();
 
@@ -784,17 +877,20 @@ function animate() {
   const deltaTime = currentTime - lastTime;
   lastTime = currentTime;
 
-  // Spawn new balloon based on timer
-  if (currentTime - lastSpawnTime > CONFIG.SPAWN_INTERVAL) {
-    spawnBalloon();
-    lastSpawnTime = currentTime;
+  // Don't spawn or update during celebration
+  if (!isCelebrating) {
+    // Spawn new balloon based on timer
+    if (currentTime - lastSpawnTime > CONFIG.SPAWN_INTERVAL) {
+      spawnBalloon();
+      lastSpawnTime = currentTime;
+    }
+
+    // Update all active balloons and remove ones that return true
+    balloons = balloons.filter((balloon) => !balloon.update(deltaTime));
+
+    // Update all active arrows
+    activeArrows = activeArrows.filter((arrow) => !arrow.update());
   }
-
-  // Update all active balloons and remove ones that return true
-  balloons = balloons.filter((balloon) => !balloon.update(deltaTime));
-
-  // Update all active arrows
-  activeArrows = activeArrows.filter((arrow) => !arrow.update());
 
   // Render the scene
   renderer.render(scene, camera);
