@@ -73,6 +73,27 @@ const confettiCtx = confettiCanvas.getContext('2d');
 let confettiParticles = [];
 let confettiAnimationId = null;
 
+// ============================================
+// ENHANCED GAME FEATURES
+// ============================================
+// Countdown
+const countdownEl = document.getElementById('countdown');
+let gameStarted = false;
+let countdownShown = false;
+
+// Power-ups
+const powerUpIndicatorEl = document.getElementById('powerUpIndicator');
+let arrowCount = 0;
+let currentPowerUp = null;
+const POWER_UP_TYPES = ['big', 'fast', 'rainbow'];
+
+// Streak system
+let currentStreak = 0;
+let missedShots = 0;
+
+// Arrow trails
+let arrowTrails = [];
+
 function initScene() {
   // Create scene with sky blue background
   scene = new THREE.Scene();
@@ -330,36 +351,56 @@ function createArcher() {
 // ARROW CLASS
 // ============================================
 class Arrow {
-  constructor(archerY) {
+  constructor(archerY, powerUp = null) {
     this.mesh = null;
-    this.speed = 0.3;
+    this.powerUp = powerUp;
     this.hasHit = false;
     this.archerY = archerY; // Y position where arrow was fired
+    this.trailParticles = [];
+    this.time = 0;
+
+    // Power-up stats
+    if (powerUp === 'big') {
+      this.speed = 0.3;
+      this.sizeMultiplier = 2.0;
+      this.hitRadius = CONFIG.BALLOON_SIZE * 1.5;
+    } else if (powerUp === 'fast') {
+      this.speed = 0.6;
+      this.sizeMultiplier = 1.0;
+      this.hitRadius = CONFIG.BALLOON_SIZE;
+    } else if (powerUp === 'rainbow') {
+      this.speed = 0.3;
+      this.sizeMultiplier = 1.0;
+      this.hitRadius = CONFIG.BALLOON_SIZE;
+    } else {
+      this.speed = 0.3;
+      this.sizeMultiplier = 1.0;
+      this.hitRadius = CONFIG.BALLOON_SIZE;
+    }
 
     this.createArrow();
 
     // Start position at archer
     this.mesh.position.set(archer.position.x, archerY, 0.5); // In front of balloons
 
-    // Arrow shoots ONLY horizontally (right along X-axis)
-    // No rotation needed - arrow already points right
-
     scene.add(this.mesh);
   }
 
   createArrow() {
     // Create arrow shaft (thin cylinder)
-    const shaftGeometry = new THREE.CylinderGeometry(0.03, 0.03, 1, 8);
-    const shaftMaterial = new THREE.MeshBasicMaterial({ color: 0x8b4513 }); // Brown
+    const shaftGeometry = new THREE.CylinderGeometry(0.03 * this.sizeMultiplier, 0.03 * this.sizeMultiplier, 1 * this.sizeMultiplier, 8);
+    const shaftColor = this.powerUp === 'rainbow' ? 0xff00ff : 0x8b4513;
+    const shaftMaterial = new THREE.MeshBasicMaterial({ color: shaftColor });
     const shaft = new THREE.Mesh(shaftGeometry, shaftMaterial);
     shaft.rotation.z = Math.PI / 2; // Point horizontally
 
     // Create arrowhead (cone)
-    const headGeometry = new THREE.ConeGeometry(0.1, 0.3, 8);
-    const headMaterial = new THREE.MeshBasicMaterial({ color: 0xc0c0c0 }); // Silver
+    const headGeometry = new THREE.ConeGeometry(0.1 * this.sizeMultiplier, 0.3 * this.sizeMultiplier, 8);
+    const headColor = this.powerUp ? 0xffd700 : 0xc0c0c0; // Gold for power-up
+    const headMaterial = new THREE.MeshBasicMaterial({ color: headColor });
     const head = new THREE.Mesh(headGeometry, headMaterial);
     head.rotation.z = -Math.PI / 2; // Point right
-    head.position.x = 0.65;
+    head.position.x = 0.65 * this.sizeMultiplier;
 
     // Group arrow parts
     const arrowGroup = new THREE.Group();
@@ -372,8 +413,21 @@ class Arrow {
   update() {
     if (this.hasHit) return true; // Remove from array
 
+    this.time++;
+
     // Move arrow ONLY horizontally (right along X-axis)
     this.mesh.position.x += this.speed;
+
+    // Rainbow color cycling for rainbow arrow
+    if (this.powerUp === 'rainbow') {
+      const hue = (this.time * 0.05) % 1;
+      this.mesh.children[0].material.color.setHSL(hue, 1, 0.5);
+    }
+
+    // Create trail particle
+    if (this.time % 2 === 0) {
+      this.createTrailParticle();
+    }
 
     // Check collision with ANY balloon at this Y level
     for (let balloon of balloons) {
@@ -381,7 +435,7 @@ class Arrow {
       const dy = this.mesh.position.y - balloon.mesh.position.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      if (distance < CONFIG.BALLOON_SIZE) {
+      if (distance < this.hitRadius) {
         // Hit! Pop the balloon
         balloon.pop();
         this.destroy();
@@ -392,11 +446,47 @@ class Arrow {
     // Check if arrow went off screen (right side)
     if (this.mesh.position.x > 15) {
       playMissSound(); // Gentle whoosh for missing
+      resetStreak(); // Reset streak on miss
       this.destroy();
       return true; // Signal removal (miss!)
     }
 
     return false;
+  }
+
+  createTrailParticle() {
+    const geometry = new THREE.CircleGeometry(0.1, 8);
+    const color = this.powerUp === 'rainbow'
+      ? new THREE.Color().setHSL(Math.random(), 1, 0.6)
+      : new THREE.Color(0xffaa00);
+    const material = new THREE.MeshBasicMaterial({
+      color: color,
+      transparent: true,
+      opacity: 0.8
+    });
+    const particle = new THREE.Mesh(geometry, material);
+
+    particle.position.copy(this.mesh.position);
+    particle.userData = { life: 1.0 };
+
+    scene.add(particle);
+    this.trailParticles.push(particle);
+
+    // Fade out trail
+    setTimeout(() => {
+      const fadeOut = () => {
+        particle.userData.life -= 0.05;
+        particle.material.opacity = particle.userData.life;
+        if (particle.userData.life > 0) {
+          requestAnimationFrame(fadeOut);
+        } else {
+          scene.remove(particle);
+          particle.geometry.dispose();
+          particle.material.dispose();
+        }
+      };
+      fadeOut();
+    }, 50);
   }
 
   destroy() {
@@ -415,9 +505,26 @@ class Arrow {
 // SHOOT ARROW
 // ============================================
 function shootArrow() {
+  arrowCount++;
+
+  // Check for power-up every 5th arrow
+  if (arrowCount % 5 === 0) {
+    currentPowerUp = POWER_UP_TYPES[Math.floor(Math.random() * POWER_UP_TYPES.length)];
+    powerUpIndicatorEl.classList.add('active');
+    console.log(`⚡ POWER-UP: ${currentPowerUp.toUpperCase()} ARROW!`);
+  }
+
   // Arrow shoots from archer's current Y position (horizontally)
-  const arrow = new Arrow(archer.position.y);
+  const arrow = new Arrow(archer.position.y, currentPowerUp);
   activeArrows.push(arrow);
+
+  // Clear power-up after use
+  if (currentPowerUp) {
+    setTimeout(() => {
+      currentPowerUp = null;
+      powerUpIndicatorEl.classList.remove('active');
+    }, 500);
+  }
 
   // Play shoot sound
   playShootSound();
@@ -466,6 +573,16 @@ class Balloon {
     this.swayOffset = Math.random() * Math.PI * 2; // Unique sway pattern
     this.hasPopped = false; // Flag to ensure only one pop per balloon
 
+    // Size variety: 70% normal, 20% big, 10% small
+    const rand = Math.random();
+    if (rand < 0.10) {
+      this.sizeMultiplier = 0.7; // Small
+    } else if (rand < 0.30) {
+      this.sizeMultiplier = 1.4; // Big
+    } else {
+      this.sizeMultiplier = 1.0; // Normal
+    }
+
     this.createBalloon();
     this.createString();
 
@@ -482,8 +599,9 @@ class Balloon {
   }
 
   createBalloon() {
-    // Create shiny balloon sphere
-    const geometry = new THREE.SphereGeometry(CONFIG.BALLOON_SIZE, 32, 32);
+    // Create shiny balloon sphere with size variety
+    const size = CONFIG.BALLOON_SIZE * this.sizeMultiplier;
+    const geometry = new THREE.SphereGeometry(size, 32, 32);
     const material = new THREE.MeshPhongMaterial({
       color: this.color,
       shininess: 100,
@@ -515,6 +633,13 @@ class Balloon {
       CONFIG.SWAY_AMOUNT;
     this.mesh.position.x += swayX * 0.01;
 
+    // Wobble animation (gentle squash and stretch)
+    const wobble = Math.sin(this.timeAlive * 0.003) * 0.05 + 1;
+    this.mesh.scale.set(1, wobble, 1);
+
+    // Check proximity to arrows for glow effect
+    this.checkArrowProximity();
+
     // Update string position
     this.updateStringPosition();
 
@@ -544,6 +669,26 @@ class Balloon {
     }
   }
 
+  checkArrowProximity() {
+    // Check if any arrow is close and add glow effect
+    let closestDistance = Infinity;
+    activeArrows.forEach(arrow => {
+      const distance = this.mesh.position.distanceTo(arrow.mesh.position);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+      }
+    });
+
+    // Add emissive glow when arrow is close (within 3 units)
+    if (closestDistance < 3) {
+      const glowIntensity = Math.max(0, 1 - closestDistance / 3);
+      this.mesh.material.emissive.setHex(0xffff00); // Yellow glow
+      this.mesh.material.emissiveIntensity = glowIntensity * 0.5;
+    } else {
+      this.mesh.material.emissiveIntensity = 0;
+    }
+  }
+
   pop() {
     // Prevent double-popping
     if (this.hasPopped) return;
@@ -552,6 +697,9 @@ class Balloon {
     // Store position before destroying
     const popPosition = this.mesh.position.clone();
 
+    // Create sparkle burst at impact point
+    createSparkleBurst(popPosition);
+
     // Create emoji confetti explosion at balloon position
     createEmojiConfetti(popPosition);
 
@@ -559,8 +707,15 @@ class Balloon {
     playPopSound();
     playComboSound();
 
+    // Update streak
+    currentStreak++;
+    checkStreak();
+
     // Increment balloon counter
     incrementBalloonCounter();
+
+    // Archer victory dance
+    doArcherDance();
 
     // Remove balloon from scene
     this.destroy();
@@ -959,6 +1114,12 @@ function resetGame() {
   activeArrows.forEach(arrow => arrow.destroy());
   activeArrows = [];
 
+  // Reset streak and power-ups
+  currentStreak = 0;
+  arrowCount = 0;
+  currentPowerUp = null;
+  powerUpIndicatorEl.classList.remove('active');
+
   // Stop victory music and resume background music
   stopVictoryMusic();
   if (!isMuted && audioContext) {
@@ -978,8 +1139,8 @@ function handleKeyPress(event) {
     return;
   }
 
-  // Don't allow shooting during celebration
-  if (isCelebrating) return;
+  // Don't allow shooting during celebration or before game starts
+  if (isCelebrating || !gameStarted) return;
 
   // Prevent default behavior (like space scrolling page)
   event.preventDefault();
@@ -1006,8 +1167,8 @@ function animate() {
   const deltaTime = currentTime - lastTime;
   lastTime = currentTime;
 
-  // Don't spawn or update during celebration
-  if (!isCelebrating) {
+  // Don't spawn or update during celebration or before game starts
+  if (!isCelebrating && gameStarted) {
     // Spawn new balloon based on timer
     if (currentTime - lastSpawnTime > CONFIG.SPAWN_INTERVAL) {
       spawnBalloon();
@@ -1059,13 +1220,155 @@ function init() {
   // Start spawn timer
   lastSpawnTime = performance.now();
 
-  // Spawn first balloon immediately
-  setTimeout(() => spawnBalloon(), 500);
-
   // Start animation loop
   animate();
 
-  console.log("✅ Game ready! Press ANY key to pop balloons!");
+  // Show countdown on first load
+  if (!countdownShown) {
+    startCountdown();
+  } else {
+    gameStarted = true;
+    setTimeout(() => spawnBalloon(), 500);
+  }
+
+  console.log("✅ Game ready!");
+}
+
+// ============================================
+// COUNTDOWN SYSTEM
+// ============================================
+function startCountdown() {
+  let count = 3;
+  gameStarted = false;
+
+  function showNumber() {
+    if (count === 0) {
+      countdownEl.textContent = 'GO!';
+      countdownEl.classList.add('active');
+      playCountdownSound('go');
+
+      setTimeout(() => {
+        countdownEl.classList.remove('active');
+        gameStarted = true;
+        countdownShown = true;
+        // Spawn first balloon
+        setTimeout(() => spawnBalloon(), 500);
+      }, 1000);
+    } else {
+      countdownEl.textContent = count;
+      countdownEl.classList.add('active');
+      playCountdownSound('tick');
+
+      setTimeout(() => {
+        countdownEl.classList.remove('active');
+        count--;
+        setTimeout(showNumber, 300);
+      }, 800);
+    }
+  }
+
+  setTimeout(showNumber, 500);
+}
+
+// ============================================
+// SPARKLE BURST ON HIT
+// ============================================
+function createSparkleBurst(position) {
+  const sparkleCount = 15;
+  for (let i = 0; i < sparkleCount; i++) {
+    const geometry = new THREE.SphereGeometry(0.1, 8, 8);
+    const material = new THREE.MeshBasicMaterial({
+      color: Math.random() > 0.5 ? 0xffff00 : 0xffffff,
+    });
+    const sparkle = new THREE.Mesh(geometry, material);
+
+    sparkle.position.copy(position);
+    const angle = (i / sparkleCount) * Math.PI * 2;
+    const speed = 0.1 + Math.random() * 0.1;
+    sparkle.userData = {
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1.0,
+    };
+
+    scene.add(sparkle);
+
+    // Animate sparkle
+    const startTime = performance.now();
+    function animateSparkle() {
+      const elapsed = performance.now() - startTime;
+      if (elapsed > 500 || !sparkle.parent) return;
+
+      sparkle.position.x += sparkle.userData.vx;
+      sparkle.position.y += sparkle.userData.vy;
+      sparkle.userData.life -= 0.02;
+      sparkle.material.opacity = sparkle.userData.life;
+      sparkle.material.transparent = true;
+
+      if (sparkle.userData.life > 0) {
+        requestAnimationFrame(animateSparkle);
+      } else {
+        scene.remove(sparkle);
+        sparkle.geometry.dispose();
+        sparkle.material.dispose();
+      }
+    }
+    animateSparkle();
+  }
+}
+
+// ============================================
+// STREAK SYSTEM
+// ============================================
+function checkStreak() {
+  if (currentStreak === 3) {
+    playStreakSound(3);
+  } else if (currentStreak === 5) {
+    playStreakSound(5);
+  } else if (currentStreak === 7) {
+    playStreakSound(7);
+  }
+}
+
+function resetStreak() {
+  currentStreak = 0;
+}
+
+// ============================================
+// ARCHER VICTORY DANCE
+// ============================================
+function doArcherDance() {
+  if (!archer) return;
+
+  const originalY = archer.position.y;
+  const bounces = 3;
+  const duration = 300;
+
+  let bounceCount = 0;
+  function bounce() {
+    if (bounceCount >= bounces) {
+      archer.position.y = originalY;
+      return;
+    }
+
+    const startTime = performance.now();
+    function animateBounce() {
+      const elapsed = performance.now() - startTime;
+      if (elapsed > duration) {
+        bounceCount++;
+        bounce();
+        return;
+      }
+
+      const progress = elapsed / duration;
+      const bounceHeight = Math.sin(progress * Math.PI) * 0.3;
+      archer.position.y = originalY + bounceHeight;
+
+      requestAnimationFrame(animateBounce);
+    }
+    animateBounce();
+  }
+  bounce();
 }
 
 // ============================================

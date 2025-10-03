@@ -202,6 +202,67 @@
                 background: rgba(240, 248, 255, 0.98);
             }
         }
+
+        #countdown {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 200px;
+            font-weight: bold;
+            color: #ff1493;
+            text-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+            z-index: 150;
+            display: none;
+            animation: countdownPulse 0.8s ease-in-out;
+        }
+
+        #countdown.active {
+            display: block;
+        }
+
+        @keyframes countdownPulse {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 0;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        #powerUpIndicator {
+            position: fixed;
+            top: 100px;
+            left: 20px;
+            background: rgba(255, 215, 0, 0.95);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 100;
+            animation: powerUpBounce 0.5s infinite;
+        }
+
+        #powerUpIndicator.active {
+            display: block;
+        }
+
+        @keyframes powerUpBounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-5px);
+            }
+        }
     </style>
 </head>
 <body>
@@ -215,6 +276,12 @@
 
     <!-- Balloon Counter -->
     <div id="balloonCounter">🎈 0/10</div>
+
+    <!-- Power-Up Indicator -->
+    <div id="powerUpIndicator">⚡ POWER UP!</div>
+
+    <!-- Countdown -->
+    <div id="countdown">3</div>
 
     <!-- Instructions overlay (fades out) -->
     <div id="instructions">
@@ -235,7 +302,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
     <!-- Game scripts -->
-    <script src="audio.js?v=6"></script>
-    <script src="game.js?v=6"></script>
+    <script src="audio.js?v=7"></script>
+    <script src="game.js?v=7"></script>
 </body>
 </html>

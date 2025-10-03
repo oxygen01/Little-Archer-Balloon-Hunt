@@ -288,3 +288,73 @@ muteBtn.addEventListener('click', () => {
 
     console.log(isMuted ? '🔇 Muted' : '🔊 Unmuted');
 });
+
+// ============================================
+// COUNTDOWN SOUNDS
+// ============================================
+function playCountdownSound(type) {
+    if (isMuted || !audioContext) return;
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    const now = audioContext.currentTime;
+
+    if (type === 'tick') {
+        // Higher pitched beep for 3, 2, 1
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        gainNode.gain.setValueAtTime(0.3, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        oscillator.start(now);
+        oscillator.stop(now + 0.1);
+    } else if (type === 'go') {
+        // Lower triumphant sound for GO
+        oscillator.frequency.value = 600;
+        oscillator.type = 'triangle';
+        gainNode.gain.setValueAtTime(0.4, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        oscillator.start(now);
+        oscillator.stop(now + 0.3);
+    }
+}
+
+// ============================================
+// STREAK SOUNDS (Yay!)
+// ============================================
+function playStreakSound(streakNumber) {
+    if (isMuted || !audioContext) return;
+
+    // Play ascending celebratory tones
+    const frequencies = {
+        3: [523.25, 659.25, 783.99], // C, E, G (3 streak)
+        5: [523.25, 659.25, 783.99, 1046.50], // C, E, G, C (5 streak)
+        7: [523.25, 659.25, 783.99, 1046.50, 1318.51], // Full celebration (7 streak)
+    };
+
+    const notes = frequencies[streakNumber] || frequencies[3];
+    const now = audioContext.currentTime;
+
+    notes.forEach((freq, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.type = 'sine';
+        oscillator.frequency.value = freq;
+
+        const startTime = now + index * 0.1;
+        gainNode.gain.setValueAtTime(0.2, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.15);
+
+        oscillator.start(startTime);
+        oscillator.stop(startTime + 0.15);
+    });
+
+    console.log(`🎉 ${streakNumber} HIT STREAK!`);
+}
