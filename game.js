@@ -9,13 +9,15 @@
 const CONFIG = {
   // Balloon colors (bright and cheerful!)
   BALLOON_COLORS: [
-    0xff0000, // Red
-    0xffff00, // Yellow
-    0x0000ff, // Blue
-    0x00ff00, // Green
-    0xff69b4, // Pink
-    0x9b59b6, // Purple
-    0xffa500, // Orange
+    0xff1744, // Bright Red
+    0xffeb3b, // Bright Yellow
+    0x2196f3, // Sky Blue
+    0x4caf50, // Grass Green
+    0xff4081, // Hot Pink
+    0x9c27b0, // Vibrant Purple
+    0xff9800, // Bright Orange
+    0x00bcd4, // Cyan
+    0xe91e63, // Deep Pink
   ],
 
   // Emoji confetti (smilies and animals)
