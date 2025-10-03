@@ -1,6 +1,6 @@
 // ============================================
-// BALLOON POP PARTY - Simple Fun Game
-// For 3-year-old boys - Press ANY key to pop!
+// LITTLE ARCHER BALLOON HUNT - Simple Fun Game
+// For 3-year-old children - Press ANY key to shoot!
 // ============================================
 
 // ============================================
@@ -1213,7 +1213,7 @@ function onWindowResize() {
 // INITIALIZATION
 // ============================================
 function init() {
-  console.log("🚀 Initializing Balloon Pop Party...");
+  console.log("🚀 Initializing Little Archer Balloon Hunt...");
 
   // Setup Three.js scene
   initScene();

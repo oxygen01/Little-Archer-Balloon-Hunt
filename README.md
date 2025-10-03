@@ -1,4 +1,4 @@
-# 🎈 Balloon Pop Party
+# 🎈 Little Archer Balloon Hunt
 
 A fun and simple balloon shooting game built with Three.js, designed for 3-year-old children to enjoy!
 
@@ -31,7 +31,7 @@ Colorful balloons float up from the bottom of the screen. Press ANY key on your 
 ### Option 1: Using Python (Recommended)
 ```bash
 # Navigate to the game directory
-cd "Balloon Pop Party game"
+cd Little-Archer-Balloon-Hunt
 
 # Start a simple HTTP server
 python3 -m http.server 8000
@@ -58,7 +58,7 @@ Simply open the `index.html` file directly in your web browser (Chrome, Firefox,
 
 ## 🛑 How to Stop
 
-- **If using Python/Node.js server**: Press `Ctrl+C` in the terminal where the server is running
+- **If using Python/Yarn server**: Press `Ctrl+C` in the terminal where the server is running
 - **If opened directly**: Simply close the browser tab
 
 ## 🎯 How to Play
