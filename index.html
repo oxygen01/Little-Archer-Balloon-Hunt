@@ -155,11 +155,21 @@
             text-shadow: 5px 5px 10px rgba(0,0,0,0.2);
         }
 
-        #celebrationSubtext {
-            font-size: 40px;
-            color: #333;
+        #celebrationCake {
+            font-size: 120px;
             margin-top: 20px;
-            font-weight: bold;
+        }
+
+        #celebrationSubtext {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            color: #666;
+            margin-top: 0;
+            font-weight: normal;
+            opacity: 0.7;
         }
 
         @keyframes fadeOut {
@@ -311,6 +321,7 @@
         <div id="celebrationText">
             <div id="celebrationName">TIMO</div>
             <div id="celebrationAge">3</div>
+            <div id="celebrationCake">🎂</div>
             <div id="celebrationSubtext">🎉 Press ESC to play again! 🎉</div>
         </div>
     </div>
@@ -319,7 +330,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
     <!-- Game scripts -->
-    <script src="audio.js?v=13"></script>
-    <script src="game.js?v=13"></script>
+    <script src="audio.js?v=16"></script>
+    <script src="game.js?v=16"></script>
 </body>
 </html>
