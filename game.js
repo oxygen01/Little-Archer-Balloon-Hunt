@@ -31,7 +31,7 @@ const CONFIG = {
     "💩",
     "🚙",
     "🦁",
-    "🐸", 
+    "🐸",
     "🐙",
     "🎉",
     "🎂",
@@ -42,7 +42,7 @@ const CONFIG = {
   // Timing (more challenging!)
   SPAWN_INTERVAL: 1200, // 1.2 seconds between spawns (even faster!)
   RISE_SPEED: 0.03, // 50% faster upward float (was 0.008)
-  MAX_BALLOONS: 16, // Max balloons on screen at once (more targets!)
+  MAX_BALLOONS: 25, // Max balloons on screen at once (more targets!)
 
   // Visual
   BALLOON_SIZE: 1.2, // Balloon radius
@@ -64,14 +64,14 @@ let activeArrows = []; // Arrows currently in flight
 // BIRTHDAY CELEBRATION TRACKING
 // ============================================
 let balloonsPopped = 0;
-const BALLOONS_TO_WIN = 10;
+const BALLOONS_TO_WIN = 20;
 let isCelebrating = false;
-const balloonCounterEl = document.getElementById('balloonCounter');
-const celebrationEl = document.getElementById('celebration');
+const balloonCounterEl = document.getElementById("balloonCounter");
+const celebrationEl = document.getElementById("celebration");
 
 // 2D Confetti Canvas
-const confettiCanvas = document.getElementById('confettiCanvas');
-const confettiCtx = confettiCanvas.getContext('2d');
+const confettiCanvas = document.getElementById("confettiCanvas");
+const confettiCtx = confettiCanvas.getContext("2d");
 let confettiParticles = [];
 let confettiAnimationId = null;
 
@@ -79,15 +79,15 @@ let confettiAnimationId = null;
 // ENHANCED GAME FEATURES
 // ============================================
 // Countdown
-const countdownEl = document.getElementById('countdown');
+const countdownEl = document.getElementById("countdown");
 let gameStarted = false;
 let countdownShown = false;
 
 // Power-ups
-const powerUpIndicatorEl = document.getElementById('powerUpIndicator');
+const powerUpIndicatorEl = document.getElementById("powerUpIndicator");
 let arrowCount = 0;
 let currentPowerUp = null;
-const POWER_UP_TYPES = ['big', 'fast', 'rainbow'];
+const POWER_UP_TYPES = ["big", "fast", "rainbow"];
 
 // Streak system
 let currentStreak = 0;
@@ -374,7 +374,7 @@ function createCelebrationCharacter() {
   const textureLoader = new THREE.TextureLoader();
 
   textureLoader.load(
-    'monkey-sprite.png', // Place your downloaded monkey sprite here
+    "monkey-sprite.png", // Place your downloaded monkey sprite here
     (texture) => {
       // Success - create sprite with loaded texture
       const spriteMaterial = new THREE.SpriteMaterial({
@@ -395,7 +395,10 @@ function createCelebrationCharacter() {
     undefined, // Progress callback (optional)
     (error) => {
       // Error - fallback to emoji
-      console.warn("Could not load monkey sprite, using emoji fallback:", error);
+      console.warn(
+        "Could not load monkey sprite, using emoji fallback:",
+        error
+      );
       createCharacterFallback();
     }
   );
@@ -442,15 +445,15 @@ class Arrow {
     this.time = 0;
 
     // Power-up stats
-    if (powerUp === 'big') {
+    if (powerUp === "big") {
       this.speed = 0.3;
       this.sizeMultiplier = 2.0;
       this.hitRadius = CONFIG.BALLOON_SIZE * 1.5;
-    } else if (powerUp === 'fast') {
+    } else if (powerUp === "fast") {
       this.speed = 0.6;
       this.sizeMultiplier = 1.0;
       this.hitRadius = CONFIG.BALLOON_SIZE;
-    } else if (powerUp === 'rainbow') {
+    } else if (powerUp === "rainbow") {
       this.speed = 0.3;
       this.sizeMultiplier = 1.0;
       this.hitRadius = CONFIG.BALLOON_SIZE;
@@ -470,14 +473,23 @@ class Arrow {
 
   createArrow() {
     // Create arrow shaft (thin cylinder)
-    const shaftGeometry = new THREE.CylinderGeometry(0.03 * this.sizeMultiplier, 0.03 * this.sizeMultiplier, 1 * this.sizeMultiplier, 8);
-    const shaftColor = this.powerUp === 'rainbow' ? 0xff00ff : 0x8b4513;
+    const shaftGeometry = new THREE.CylinderGeometry(
+      0.03 * this.sizeMultiplier,
+      0.03 * this.sizeMultiplier,
+      1 * this.sizeMultiplier,
+      8
+    );
+    const shaftColor = this.powerUp === "rainbow" ? 0xff00ff : 0x8b4513;
     const shaftMaterial = new THREE.MeshBasicMaterial({ color: shaftColor });
     const shaft = new THREE.Mesh(shaftGeometry, shaftMaterial);
     shaft.rotation.z = Math.PI / 2; // Point horizontally
 
     // Create arrowhead (cone)
-    const headGeometry = new THREE.ConeGeometry(0.1 * this.sizeMultiplier, 0.3 * this.sizeMultiplier, 8);
+    const headGeometry = new THREE.ConeGeometry(
+      0.1 * this.sizeMultiplier,
+      0.3 * this.sizeMultiplier,
+      8
+    );
     const headColor = this.powerUp ? 0xffd700 : 0xc0c0c0; // Gold for power-up
     const headMaterial = new THREE.MeshBasicMaterial({ color: headColor });
     const head = new THREE.Mesh(headGeometry, headMaterial);
@@ -501,7 +513,7 @@ class Arrow {
     this.mesh.position.x += this.speed;
 
     // Rainbow color cycling for rainbow arrow
-    if (this.powerUp === 'rainbow') {
+    if (this.powerUp === "rainbow") {
       const hue = (this.time * 0.05) % 1;
       this.mesh.children[0].material.color.setHSL(hue, 1, 0.5);
     }
@@ -538,13 +550,14 @@ class Arrow {
 
   createTrailParticle() {
     const geometry = new THREE.CircleGeometry(0.1, 8);
-    const color = this.powerUp === 'rainbow'
-      ? new THREE.Color().setHSL(Math.random(), 1, 0.6)
-      : new THREE.Color(0xffaa00);
+    const color =
+      this.powerUp === "rainbow"
+        ? new THREE.Color().setHSL(Math.random(), 1, 0.6)
+        : new THREE.Color(0xffaa00);
     const material = new THREE.MeshBasicMaterial({
       color: color,
       transparent: true,
-      opacity: 0.8
+      opacity: 0.8,
     });
     const particle = new THREE.Mesh(geometry, material);
 
@@ -591,8 +604,9 @@ function shootArrow() {
 
   // Check for power-up every 5th arrow
   if (arrowCount % 5 === 0) {
-    currentPowerUp = POWER_UP_TYPES[Math.floor(Math.random() * POWER_UP_TYPES.length)];
-    powerUpIndicatorEl.classList.add('active');
+    currentPowerUp =
+      POWER_UP_TYPES[Math.floor(Math.random() * POWER_UP_TYPES.length)];
+    powerUpIndicatorEl.classList.add("active");
     console.log(`⚡ POWER-UP: ${currentPowerUp.toUpperCase()} ARROW!`);
   }
 
@@ -604,7 +618,7 @@ function shootArrow() {
   if (currentPowerUp) {
     setTimeout(() => {
       currentPowerUp = null;
-      powerUpIndicatorEl.classList.remove('active');
+      powerUpIndicatorEl.classList.remove("active");
     }, 500);
   }
 
@@ -657,8 +671,9 @@ function characterCelebrate() {
   const startTime = performance.now();
 
   // Pick random animation type
-  const animations = ['jump', 'spin', 'shake', 'pulse'];
-  const animationType = animations[Math.floor(Math.random() * animations.length)];
+  const animations = ["jump", "spin", "shake", "pulse"];
+  const animationType =
+    animations[Math.floor(Math.random() * animations.length)];
 
   function animate() {
     const elapsed = performance.now() - startTime;
@@ -672,18 +687,18 @@ function characterCelebrate() {
       celebrationCharacter.rotation.z = 0;
       isCharacterCelebrating = false;
     } else {
-      if (animationType === 'jump') {
+      if (animationType === "jump") {
         // Jump up and down
         const jumpHeight = Math.sin(progress * Math.PI) * 1.5;
         celebrationCharacter.position.y = characterOriginalY + jumpHeight;
-      } else if (animationType === 'spin') {
+      } else if (animationType === "spin") {
         // Spin 360 degrees
         celebrationCharacter.rotation.z = progress * Math.PI * 2;
-      } else if (animationType === 'shake') {
+      } else if (animationType === "shake") {
         // Shake left and right
         const shakeAmount = Math.sin(progress * Math.PI * 8) * 0.3;
         celebrationCharacter.position.x = characterOriginalX + shakeAmount;
-      } else if (animationType === 'pulse') {
+      } else if (animationType === "pulse") {
         // Scale up and down
         const pulseScale = 1 + Math.sin(progress * Math.PI) * 0.3;
         celebrationCharacter.scale.set(2.5 * pulseScale, 2.5 * pulseScale, 1);
@@ -709,9 +724,9 @@ class Balloon {
 
     // Size variety: 70% normal, 20% big, 10% small
     const rand = Math.random();
-    if (rand < 0.10) {
+    if (rand < 0.1) {
       this.sizeMultiplier = 0.7; // Small
-    } else if (rand < 0.30) {
+    } else if (rand < 0.3) {
       this.sizeMultiplier = 1.4; // Big
     } else {
       this.sizeMultiplier = 1.0; // Normal
@@ -806,7 +821,7 @@ class Balloon {
   checkArrowProximity() {
     // Check if any arrow is close and add glow effect
     let closestDistance = Infinity;
-    activeArrows.forEach(arrow => {
+    activeArrows.forEach((arrow) => {
       const distance = this.mesh.position.distanceTo(arrow.mesh.position);
       if (distance < closestDistance) {
         closestDistance = distance;
@@ -1079,13 +1094,13 @@ function incrementBalloonCounter() {
 
 function triggerCelebration() {
   isCelebrating = true;
-  console.log('🎉 BIRTHDAY CELEBRATION! 🎉');
+  console.log("🎉 BIRTHDAY CELEBRATION! 🎉");
 
   // Stop background music and play victory music
   playVictoryMusic();
 
   // Show celebration overlay
-  celebrationEl.classList.add('active');
+  celebrationEl.classList.add("active");
 
   // Setup confetti canvas
   confettiCanvas.width = window.innerWidth;
@@ -1113,14 +1128,23 @@ class ConfettiParticle {
     this.rotationSpeed = (Math.random() - 0.5) * 15;
     this.color = this.randomColor();
     this.opacity = 1;
-    this.shape = Math.random() > 0.5 ? 'rect' : 'circle';
+    this.shape = Math.random() > 0.5 ? "rect" : "circle";
   }
 
   randomColor() {
     const colors = [
-      '#FF0000', '#FF7F00', '#FFFF00', '#00FF00',
-      '#0000FF', '#4B0082', '#9400D3', '#FF1493',
-      '#00FFFF', '#FF69B4', '#FFD700', '#FF6347'
+      "#FF0000",
+      "#FF7F00",
+      "#FFFF00",
+      "#00FF00",
+      "#0000FF",
+      "#4B0082",
+      "#9400D3",
+      "#FF1493",
+      "#00FFFF",
+      "#FF69B4",
+      "#FFD700",
+      "#FF6347",
     ];
     return colors[Math.floor(Math.random() * colors.length)];
   }
@@ -1144,7 +1168,7 @@ class ConfettiParticle {
     ctx.rotate((this.rotation * Math.PI) / 180);
     ctx.fillStyle = this.color;
 
-    if (this.shape === 'rect') {
+    if (this.shape === "rect") {
       ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
     } else {
       ctx.beginPath();
@@ -1178,10 +1202,7 @@ function create2DConfetti() {
     if (isCelebrating) {
       for (let i = 0; i < 5; i++) {
         confettiParticles.push(
-          new ConfettiParticle(
-            Math.random() * window.innerWidth,
-            -20
-          )
+          new ConfettiParticle(Math.random() * window.innerWidth, -20)
         );
       }
     }
@@ -1192,13 +1213,19 @@ function create2DConfetti() {
     if (isCelebrating) {
       // Left side
       for (let i = 0; i < 3; i++) {
-        const particle = new ConfettiParticle(0, Math.random() * window.innerHeight);
+        const particle = new ConfettiParticle(
+          0,
+          Math.random() * window.innerHeight
+        );
         particle.speedX = Math.random() * 10 + 5;
         confettiParticles.push(particle);
       }
       // Right side
       for (let i = 0; i < 3; i++) {
-        const particle = new ConfettiParticle(window.innerWidth, Math.random() * window.innerHeight);
+        const particle = new ConfettiParticle(
+          window.innerWidth,
+          Math.random() * window.innerHeight
+        );
         particle.speedX = -(Math.random() * 10 + 5);
         confettiParticles.push(particle);
       }
@@ -1215,7 +1242,7 @@ function animate2DConfetti() {
   confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
 
   // Update and draw all particles
-  confettiParticles = confettiParticles.filter(particle => {
+  confettiParticles = confettiParticles.filter((particle) => {
     particle.update();
     particle.draw(confettiCtx);
     return !particle.isDead();
@@ -1225,14 +1252,14 @@ function animate2DConfetti() {
 }
 
 function resetGame() {
-  console.log('🔄 Resetting game...');
+  console.log("🔄 Resetting game...");
 
   isCelebrating = false;
   balloonsPopped = 0;
   balloonCounterEl.textContent = `🎈 0/${BALLOONS_TO_WIN}`;
 
   // Hide celebration overlay
-  celebrationEl.classList.remove('active');
+  celebrationEl.classList.remove("active");
 
   // Stop confetti animation
   if (confettiAnimationId) {
@@ -1243,16 +1270,16 @@ function resetGame() {
   confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
 
   // Clear all balloons and arrows
-  balloons.forEach(balloon => balloon.destroy());
+  balloons.forEach((balloon) => balloon.destroy());
   balloons = [];
-  activeArrows.forEach(arrow => arrow.destroy());
+  activeArrows.forEach((arrow) => arrow.destroy());
   activeArrows = [];
 
   // Reset streak and power-ups
   currentStreak = 0;
   arrowCount = 0;
   currentPowerUp = null;
-  powerUpIndicatorEl.classList.remove('active');
+  powerUpIndicatorEl.classList.remove("active");
 
   // Stop victory music and resume background music
   stopVictoryMusic();
@@ -1260,7 +1287,7 @@ function resetGame() {
     startBackgroundMusic();
   }
 
-  console.log('✅ Game reset! Ready to play again!');
+  console.log("✅ Game reset! Ready to play again!");
 }
 
 // ============================================
@@ -1268,7 +1295,7 @@ function resetGame() {
 // ============================================
 function handleKeyPress(event) {
   // ESC key to reset game during celebration
-  if (event.key === 'Escape' && isCelebrating) {
+  if (event.key === "Escape" && isCelebrating) {
     resetGame();
     return;
   }
@@ -1377,12 +1404,12 @@ function startCountdown() {
 
   function showNumber() {
     if (count === 0) {
-      countdownEl.textContent = 'GO!';
-      countdownEl.classList.add('active');
-      playCountdownSound('go');
+      countdownEl.textContent = "GO!";
+      countdownEl.classList.add("active");
+      playCountdownSound("go");
 
       setTimeout(() => {
-        countdownEl.classList.remove('active');
+        countdownEl.classList.remove("active");
         gameStarted = true;
         countdownShown = true;
         // Spawn first balloon
@@ -1390,11 +1417,11 @@ function startCountdown() {
       }, 1000);
     } else {
       countdownEl.textContent = count;
-      countdownEl.classList.add('active');
-      playCountdownSound('tick');
+      countdownEl.classList.add("active");
+      playCountdownSound("tick");
 
       setTimeout(() => {
-        countdownEl.classList.remove('active');
+        countdownEl.classList.remove("active");
         count--;
         setTimeout(showNumber, 300);
       }, 800);

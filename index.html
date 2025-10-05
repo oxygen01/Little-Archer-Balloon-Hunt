@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>🎈 Little Archer Balloon Hunt</title>
 
     <!--
@@ -22,287 +22,300 @@
     -->
 
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-        body {
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-        }
+      body {
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+      }
 
-        #gameCanvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
-        }
+      #gameCanvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
 
-        #ui {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 100;
-        }
+      #ui {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 100;
+      }
 
-        #muteBtn {
-            background: rgba(255, 255, 255, 0.9);
-            border: 3px solid #333;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            font-size: 30px;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            transition: transform 0.1s;
-        }
+      #muteBtn {
+        background: rgba(255, 255, 255, 0.9);
+        border: 3px solid #333;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        font-size: 30px;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        transition: transform 0.1s;
+      }
 
-        #muteBtn:hover {
-            transform: scale(1.1);
-        }
+      #muteBtn:hover {
+        transform: scale(1.1);
+      }
 
-        #muteBtn:active {
-            transform: scale(0.95);
-        }
+      #muteBtn:active {
+        transform: scale(0.95);
+      }
 
-        #instructions {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.9);
-            padding: 15px 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            text-align: center;
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-            z-index: 50;
-            animation: fadeOut 4s forwards;
-            pointer-events: none;
-        }
+      #instructions {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 255, 255, 0.9);
+        padding: 15px 30px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        font-size: 20px;
+        font-weight: bold;
+        color: #333;
+        z-index: 50;
+        animation: fadeOut 4s forwards;
+        pointer-events: none;
+      }
 
-        #balloonCounter {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 15px 25px;
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            font-size: 28px;
-            font-weight: bold;
-            color: #333;
-            z-index: 100;
-            font-family: 'Arial', sans-serif;
-        }
+      #balloonCounter {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 15px 25px;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        font-size: 28px;
+        font-weight: bold;
+        color: #333;
+        z-index: 100;
+        font-family: "Arial", sans-serif;
+      }
 
-        #celebration {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(255, 255, 255, 0.95);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            z-index: 200;
-            animation: celebrationPulse 2s infinite;
-        }
+      #celebration {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(255, 255, 255, 0.95);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        z-index: 200;
+        animation: celebrationPulse 2s infinite;
+      }
 
-        #celebration.active {
-            display: flex;
-        }
+      #celebration.active {
+        display: flex;
+      }
 
-        #confettiCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 201;
-        }
+      #confettiCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 201;
+      }
 
-        #celebrationText {
-            text-align: center;
-            position: relative;
-            z-index: 202;
-        }
+      #celebrationText {
+        text-align: center;
+        position: relative;
+        z-index: 202;
+      }
 
-        #celebrationName {
-            font-size: 80px;
-            font-weight: bold;
-            color: #ff1493;
-            margin-bottom: 20px;
-            animation: bounce 1s infinite;
-            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
-        }
+      #celebrationName {
+        font-size: 80px;
+        font-weight: bold;
+        color: #131a1fff;
+        margin-bottom: 20px;
+        animation: bounce 1s infinite;
+        text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+      }
 
-        #celebrationAge {
-            font-size: 200px;
-            font-weight: bold;
-            background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
-            background-size: 400% 400%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: rainbow 3s ease infinite, spin 3s ease-in-out infinite;
-            text-shadow: 5px 5px 10px rgba(0,0,0,0.2);
-        }
+      #celebrationAge {
+        font-size: 200px;
+        font-weight: bold;
+        background: linear-gradient(
+          45deg,
+          #ff0000,
+          #ff7f00,
+          #ffff00,
+          #00ff00,
+          #0000ff,
+          #4b0082,
+          #9400d3
+        );
+        background-size: 400% 400%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: rainbow 3s ease infinite, spin 3s ease-in-out infinite;
+        text-shadow: 5px 5px 10px rgba(0, 0, 0, 0.2);
+      }
 
-        #celebrationCake {
-            font-size: 120px;
-            margin-top: 20px;
-        }
+      #celebrationCake {
+        font-size: 120px;
+        margin-top: 20px;
+      }
 
-        #celebrationSubtext {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 18px;
-            color: #666;
-            margin-top: 0;
-            font-weight: normal;
-            opacity: 0.7;
-        }
+      #celebrationSubtext {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 18px;
+        color: #666;
+        margin-top: 0;
+        font-weight: normal;
+        opacity: 0.7;
+      }
 
-        @keyframes fadeOut {
-            0%, 70% {
-                opacity: 1;
-            }
-            100% {
-                opacity: 0;
-                display: none;
-            }
+      @keyframes fadeOut {
+        0%,
+        70% {
+          opacity: 1;
         }
+        100% {
+          opacity: 0;
+          display: none;
+        }
+      }
 
-        @keyframes bounce {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-20px);
-            }
+      @keyframes bounce {
+        0%,
+        100% {
+          transform: translateY(0);
         }
+        50% {
+          transform: translateY(-20px);
+        }
+      }
 
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg) scale(1);
-            }
-            25% {
-                transform: rotate(5deg) scale(1.05);
-            }
-            50% {
-                transform: rotate(0deg) scale(1);
-            }
-            75% {
-                transform: rotate(-5deg) scale(1.05);
-            }
-            100% {
-                transform: rotate(0deg) scale(1);
-            }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg) scale(1);
         }
+        25% {
+          transform: rotate(5deg) scale(1.05);
+        }
+        50% {
+          transform: rotate(0deg) scale(1);
+        }
+        75% {
+          transform: rotate(-5deg) scale(1.05);
+        }
+        100% {
+          transform: rotate(0deg) scale(1);
+        }
+      }
 
-        @keyframes rainbow {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
+      @keyframes rainbow {
+        0% {
+          background-position: 0% 50%;
         }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
 
-        @keyframes celebrationPulse {
-            0%, 100% {
-                background: rgba(255, 240, 245, 0.98);
-            }
-            50% {
-                background: rgba(240, 248, 255, 0.98);
-            }
+      @keyframes celebrationPulse {
+        0%,
+        100% {
+          background: rgba(255, 240, 245, 0.98);
         }
+        50% {
+          background: rgba(240, 248, 255, 0.98);
+        }
+      }
 
-        #countdown {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 200px;
-            font-weight: bold;
-            color: #ff1493;
-            text-shadow: 5px 5px 15px rgba(0,0,0,0.3);
-            z-index: 150;
-            display: none;
-            animation: countdownPulse 0.8s ease-in-out;
-        }
+      #countdown {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 200px;
+        font-weight: bold;
+        color: #ff1493;
+        text-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
+        z-index: 150;
+        display: none;
+        animation: countdownPulse 0.8s ease-in-out;
+      }
 
-        #countdown.active {
-            display: block;
-        }
+      #countdown.active {
+        display: block;
+      }
 
-        @keyframes countdownPulse {
-            0% {
-                transform: translate(-50%, -50%) scale(0.5);
-                opacity: 0;
-            }
-            50% {
-                transform: translate(-50%, -50%) scale(1.2);
-            }
-            100% {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 1;
-            }
+      @keyframes countdownPulse {
+        0% {
+          transform: translate(-50%, -50%) scale(0.5);
+          opacity: 0;
         }
+        50% {
+          transform: translate(-50%, -50%) scale(1.2);
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 1;
+        }
+      }
 
-        #powerUpIndicator {
-            position: fixed;
-            top: 100px;
-            left: 20px;
-            background: rgba(255, 215, 0, 0.95);
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            display: none;
-            z-index: 100;
-            animation: powerUpBounce 0.5s infinite;
-        }
+      #powerUpIndicator {
+        position: fixed;
+        top: 100px;
+        left: 20px;
+        background: rgba(255, 215, 0, 0.95);
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        color: #333;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        display: none;
+        z-index: 100;
+        animation: powerUpBounce 0.5s infinite;
+      }
 
-        #powerUpIndicator.active {
-            display: block;
-        }
+      #powerUpIndicator.active {
+        display: block;
+      }
 
-        @keyframes powerUpBounce {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-5px);
-            }
+      @keyframes powerUpBounce {
+        0%,
+        100% {
+          transform: translateY(0);
         }
+        50% {
+          transform: translateY(-5px);
+        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <!-- Canvas for Three.js -->
     <canvas id="gameCanvas"></canvas>
 
     <!-- UI overlay -->
     <div id="ui">
-        <button id="muteBtn" title="Mute/Unmute">🔊</button>
+      <button id="muteBtn" title="Mute/Unmute">🔊</button>
     </div>
 
     <!-- Balloon Counter -->
-    <div id="balloonCounter">🎈 0/10</div>
+    <div id="balloonCounter">🎈 0/20</div>
 
     <!-- Power-Up Indicator -->
     <div id="powerUpIndicator">⚡ POWER UP!</div>
@@ -311,26 +324,24 @@
     <div id="countdown">3</div>
 
     <!-- Instructions overlay (fades out) -->
-    <div id="instructions">
-        🎈 Press ANY key to pop balloons! 🎈
-    </div>
+    <div id="instructions">🎈 Press ANY key to pop balloons! 🎈</div>
 
     <!-- Birthday Celebration Overlay -->
     <div id="celebration">
-        <canvas id="confettiCanvas"></canvas>
-        <div id="celebrationText">
-            <div id="celebrationName">TIMO</div>
-            <div id="celebrationAge">3</div>
-            <div id="celebrationCake">🎂</div>
-            <div id="celebrationSubtext">🎉 Press ESC to play again! 🎉</div>
-        </div>
+      <canvas id="confettiCanvas"></canvas>
+      <div id="celebrationText">
+        <div id="celebrationName">TIMO</div>
+        <div id="celebrationAge">3</div>
+        <div id="celebrationCake">🎂</div>
+        <div id="celebrationSubtext">🎉 Press ESC to play again! 🎉</div>
+      </div>
     </div>
 
     <!-- Three.js from CDN -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 
     <!-- Game scripts -->
-    <script src="audio.js?v=21"></script>
-    <script src="game.js?v=21"></script>
-</body>
+    <script src="audio.js?v=22"></script>
+    <script src="game.js?v=22"></script>
+  </body>
 </html>
