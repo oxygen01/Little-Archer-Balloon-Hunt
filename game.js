@@ -87,7 +87,7 @@ let countdownShown = false;
 const powerUpIndicatorEl = document.getElementById("powerUpIndicator");
 let arrowCount = 0;
 let currentPowerUp = null;
-const POWER_UP_TYPES = ["big", "fast", "rainbow"];
+const POWER_UP_TYPES = ["big", "fast", "rainbow", "multi", "freeze", "magnet"];
 
 // Streak system
 let currentStreak = 0;
@@ -101,6 +101,14 @@ let archerOriginalX = -11;
 let archerOriginalY = 0;
 let isArcherDancing = false;
 let isArcherRecoiling = false;
+
+// Freeze time power-up
+let freezeTimeActive = false;
+let freezeTimeRemaining = 0;
+
+// Screen shake effect
+let cameraShake = 0;
+let cameraShakeIntensity = 0;
 
 // Celebration Character
 let celebrationCharacter = null;
@@ -443,6 +451,7 @@ class Arrow {
     this.archerY = archerY; // Y position where arrow was fired
     this.trailParticles = [];
     this.time = 0;
+    this.spreadDirection = 0; // For multi-arrow spread
 
     // Power-up stats
     if (powerUp === "big") {
@@ -457,6 +466,11 @@ class Arrow {
       this.speed = 0.3;
       this.sizeMultiplier = 1.0;
       this.hitRadius = CONFIG.BALLOON_SIZE;
+    } else if (powerUp === "magnet") {
+      this.speed = 0.25;
+      this.sizeMultiplier = 1.0;
+      this.hitRadius = CONFIG.BALLOON_SIZE * 1.2;
+      this.magnetRange = 4.0; // Range to detect balloons
     } else {
       this.speed = 0.3;
       this.sizeMultiplier = 1.0;
@@ -509,8 +523,18 @@ class Arrow {
 
     this.time++;
 
-    // Move arrow ONLY horizontally (right along X-axis)
-    this.mesh.position.x += this.speed;
+    // Handle magnet arrow behavior
+    if (this.powerUp === "magnet") {
+      this.applyMagnetForce();
+    } else {
+      // Move arrow ONLY horizontally (right along X-axis)
+      this.mesh.position.x += this.speed;
+
+      // Apply spread direction for multi-arrows
+      if (this.spreadDirection !== 0) {
+        this.mesh.position.y += Math.sin(this.spreadDirection) * this.speed * 0.3;
+      }
+    }
 
     // Rainbow color cycling for rainbow arrow
     if (this.powerUp === "rainbow") {
@@ -548,40 +572,106 @@ class Arrow {
     return false;
   }
 
+  applyMagnetForce() {
+    // Find nearest balloon within magnet range
+    let nearestBalloon = null;
+    let nearestDistance = this.magnetRange;
+
+    for (let balloon of balloons) {
+      const distance = this.mesh.position.distanceTo(balloon.mesh.position);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestBalloon = balloon;
+      }
+    }
+
+    if (nearestBalloon) {
+      // Calculate direction to balloon
+      const direction = new THREE.Vector3()
+        .subVectors(nearestBalloon.mesh.position, this.mesh.position)
+        .normalize();
+
+      // Apply magnet force (blend with forward motion)
+      const magnetStrength = 0.4;
+      const forwardMotion = 0.6;
+
+      this.mesh.position.x += this.speed * forwardMotion + direction.x * magnetStrength * this.speed;
+      this.mesh.position.y += direction.y * magnetStrength * this.speed;
+    } else {
+      // No balloon in range, move normally
+      this.mesh.position.x += this.speed;
+    }
+  }
+
   createTrailParticle() {
-    const geometry = new THREE.CircleGeometry(0.1, 8);
-    const color =
-      this.powerUp === "rainbow"
-        ? new THREE.Color().setHSL(Math.random(), 1, 0.6)
-        : new THREE.Color(0xffaa00);
-    const material = new THREE.MeshBasicMaterial({
-      color: color,
-      transparent: true,
-      opacity: 0.8,
-    });
-    const particle = new THREE.Mesh(geometry, material);
+    // Create multiple particles for richer trail effect
+    const particleCount = this.powerUp === "rainbow" ? 3 : 2;
 
-    particle.position.copy(this.mesh.position);
-    particle.userData = { life: 1.0 };
+    for (let i = 0; i < particleCount; i++) {
+      const geometry = new THREE.CircleGeometry(0.05 + Math.random() * 0.05, 8);
 
-    scene.add(particle);
-    this.trailParticles.push(particle);
+      let color;
+      if (this.powerUp === "rainbow") {
+        color = new THREE.Color().setHSL(Math.random(), 1, 0.6);
+      } else if (this.powerUp === "big") {
+        color = new THREE.Color(0xff6600); // Orange for big arrows
+      } else if (this.powerUp === "fast") {
+        color = new THREE.Color(0x00ffff); // Cyan for fast arrows
+      } else if (this.powerUp === "magnet") {
+        color = new THREE.Color(0xff00ff); // Magenta for magnet arrows
+      } else {
+        color = new THREE.Color(0xffaa00); // Default yellow
+      }
 
-    // Fade out trail
-    setTimeout(() => {
-      const fadeOut = () => {
-        particle.userData.life -= 0.05;
-        particle.material.opacity = particle.userData.life;
-        if (particle.userData.life > 0) {
-          requestAnimationFrame(fadeOut);
-        } else {
-          scene.remove(particle);
-          particle.geometry.dispose();
-          particle.material.dispose();
-        }
+      const material = new THREE.MeshBasicMaterial({
+        color: color,
+        transparent: true,
+        opacity: 0.8 - i * 0.2, // Varying opacity
+      });
+      const particle = new THREE.Mesh(geometry, material);
+
+      // Add slight random offset for trail variety
+      const offset = new THREE.Vector3(
+        (Math.random() - 0.5) * 0.2,
+        (Math.random() - 0.5) * 0.2,
+        0
+      );
+      particle.position.copy(this.mesh.position).add(offset);
+      particle.userData = {
+        life: 1.0 - i * 0.2,
+        initialSize: particle.scale.x,
+        sparkle: this.powerUp === "big" || this.powerUp === "rainbow"
       };
-      fadeOut();
-    }, 50);
+
+      scene.add(particle);
+      this.trailParticles.push(particle);
+
+      // Enhanced fade out with scaling and sparkle effects
+      setTimeout(() => {
+        const fadeOut = () => {
+          particle.userData.life -= 0.03;
+          particle.material.opacity = particle.userData.life;
+
+          // Shrink particle as it fades
+          const scale = particle.userData.life * particle.userData.initialSize;
+          particle.scale.set(scale, scale, scale);
+
+          // Sparkle effect for special arrows
+          if (particle.userData.sparkle && Math.random() < 0.3) {
+            particle.material.opacity = Math.random() * particle.userData.life;
+          }
+
+          if (particle.userData.life > 0) {
+            requestAnimationFrame(fadeOut);
+          } else {
+            scene.remove(particle);
+            particle.geometry.dispose();
+            particle.material.dispose();
+          }
+        };
+        fadeOut();
+      }, 50 + i * 20); // Staggered fade timing
+    }
   }
 
   destroy() {
@@ -607,18 +697,39 @@ function shootArrow() {
     currentPowerUp =
       POWER_UP_TYPES[Math.floor(Math.random() * POWER_UP_TYPES.length)];
     powerUpIndicatorEl.classList.add("active");
+    powerUpIndicatorEl.textContent = `⚡ ${currentPowerUp.toUpperCase()} POWER!`;
     console.log(`⚡ POWER-UP: ${currentPowerUp.toUpperCase()} ARROW!`);
   }
 
-  // Arrow shoots from archer's current Y position (horizontally)
-  const arrow = new Arrow(archer.position.y, currentPowerUp);
-  activeArrows.push(arrow);
+  // Handle special power-ups
+  if (currentPowerUp === "multi") {
+    // Shoot 3 arrows in a spread pattern
+    const spreadAngle = 0.3; // Radians
+    for (let i = -1; i <= 1; i++) {
+      const arrow = new Arrow(archer.position.y + i * 0.8, null); // Spread vertically
+      // Adjust arrow direction for spread
+      if (i !== 0) {
+        arrow.spreadDirection = i * spreadAngle;
+      }
+      activeArrows.push(arrow);
+    }
+  } else if (currentPowerUp === "freeze") {
+    // Activate freeze time effect
+    activateFreezeTime();
+    const arrow = new Arrow(archer.position.y, currentPowerUp);
+    activeArrows.push(arrow);
+  } else {
+    // Normal arrow or other power-ups
+    const arrow = new Arrow(archer.position.y, currentPowerUp);
+    activeArrows.push(arrow);
+  }
 
   // Clear power-up after use
   if (currentPowerUp) {
     setTimeout(() => {
       currentPowerUp = null;
       powerUpIndicatorEl.classList.remove("active");
+      powerUpIndicatorEl.textContent = "⚡ POWER UP!";
     }, 500);
   }
 
@@ -629,6 +740,30 @@ function shootArrow() {
   animateArcherShoot();
 
   console.log("➡️ Arrow fired horizontally!");
+}
+
+// ============================================
+// FREEZE TIME POWER-UP
+// ============================================
+function activateFreezeTime() {
+  freezeTimeActive = true;
+  freezeTimeRemaining = 300; // 5 seconds at 60fps
+
+  // Visual effect - tint the screen slightly blue
+  document.getElementById('gameCanvas').style.filter = 'hue-rotate(180deg) brightness(0.8)';
+
+  console.log("❄️ FREEZE TIME activated!");
+}
+
+function updateFreezeTime() {
+  if (freezeTimeActive) {
+    freezeTimeRemaining--;
+    if (freezeTimeRemaining <= 0) {
+      freezeTimeActive = false;
+      document.getElementById('gameCanvas').style.filter = 'none';
+      console.log("❄️ Freeze time ended");
+    }
+  }
 }
 
 // ============================================
@@ -722,6 +857,7 @@ class Balloon {
     this.swayOffset = Math.random() * Math.PI * 2; // Unique sway pattern
     this.hasPopped = false; // Flag to ensure only one pop per balloon
 
+
     // Size variety: 70% normal, 20% big, 10% small
     const rand = Math.random();
     if (rand < 0.1) {
@@ -773,16 +909,19 @@ class Balloon {
   update(deltaTime) {
     this.timeAlive += deltaTime;
 
-    // Float upward slowly
-    this.mesh.position.y += CONFIG.RISE_SPEED;
+    // Apply freeze time effect
+    const speedMultiplier = freezeTimeActive ? 0.2 : 1.0;
+
+    // Simple upward float
+    this.mesh.position.y += CONFIG.RISE_SPEED * speedMultiplier;
 
     // Gentle side-to-side sway
     const swayX =
       Math.sin(this.timeAlive * CONFIG.SWAY_SPEED + this.swayOffset) *
       CONFIG.SWAY_AMOUNT;
-    this.mesh.position.x += swayX * 0.01;
+    this.mesh.position.x += swayX * 0.01 * speedMultiplier;
 
-    // Wobble animation (gentle squash and stretch)
+    // Simple wobble animation (gentle squash and stretch)
     const wobble = Math.sin(this.timeAlive * 0.003) * 0.05 + 1;
     this.mesh.scale.set(1, wobble, 1);
 
@@ -855,6 +994,10 @@ class Balloon {
     // Play happy pop sound and combo sound
     playPopSound();
     playComboSound();
+
+    // Enhanced hit feedback
+    addScreenShake(0.1);
+    createHitRipple(popPosition);
 
     // Celebrate with character animation
     characterCelebrate();
@@ -1291,7 +1434,7 @@ function resetGame() {
 }
 
 // ============================================
-// INPUT HANDLING (KEYBOARD - ANY KEY!)
+// INPUT HANDLING (KEYBOARD, MOUSE, TOUCH)
 // ============================================
 function handleKeyPress(event) {
   // ESC key to reset game during celebration
@@ -1316,6 +1459,86 @@ function handleKeyPress(event) {
   shootArrow();
 }
 
+// Mouse and touch shooting
+function handlePointerInput(event) {
+  // Don't allow shooting during celebration or before game starts
+  if (isCelebrating || !gameStarted) return;
+
+  // Prevent default behavior
+  event.preventDefault();
+
+  // Get canvas bounds for coordinate conversion
+  const canvas = document.getElementById('gameCanvas');
+  const rect = canvas.getBoundingClientRect();
+
+  // Calculate mouse/touch position relative to canvas
+  let clientY;
+  if (event.type.includes('touch')) {
+    const touch = event.touches[0] || event.changedTouches[0];
+    clientY = touch.clientY;
+  } else {
+    clientY = event.clientY;
+  }
+
+  // Convert to normalized device coordinates (-1 to 1)
+  const y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+  // Convert to world coordinates
+  const targetY = y * 8; // Approximate world scale
+
+  // Shoot arrow toward target Y position
+  shootArrowToTarget(targetY);
+}
+
+function shootArrowToTarget(targetY) {
+  arrowCount++;
+
+  // Check for power-up every 5th arrow
+  if (arrowCount % 5 === 0) {
+    currentPowerUp =
+      POWER_UP_TYPES[Math.floor(Math.random() * POWER_UP_TYPES.length)];
+    powerUpIndicatorEl.classList.add("active");
+    powerUpIndicatorEl.textContent = `⚡ ${currentPowerUp.toUpperCase()} POWER!`;
+    console.log(`⚡ POWER-UP: ${currentPowerUp.toUpperCase()} ARROW!`);
+  }
+
+  // Handle special power-ups
+  if (currentPowerUp === "multi") {
+    // Shoot 3 arrows in a spread pattern around target
+    for (let i = -1; i <= 1; i++) {
+      const arrow = new Arrow(targetY + i * 0.8, null);
+      if (i !== 0) {
+        arrow.spreadDirection = i * 0.3;
+      }
+      activeArrows.push(arrow);
+    }
+  } else if (currentPowerUp === "freeze") {
+    activateFreezeTime();
+    const arrow = new Arrow(targetY, currentPowerUp);
+    activeArrows.push(arrow);
+  } else {
+    const arrow = new Arrow(targetY, currentPowerUp);
+    activeArrows.push(arrow);
+  }
+
+  // Clear power-up after use
+  if (currentPowerUp) {
+    setTimeout(() => {
+      currentPowerUp = null;
+      powerUpIndicatorEl.classList.remove("active");
+      powerUpIndicatorEl.textContent = "⚡ POWER UP!";
+    }, 500);
+  }
+
+  // Play shoot sound
+  playShootSound();
+
+  // Animate archer (slight recoil)
+  animateArcherShoot();
+
+  console.log(`🎯 Arrow fired toward Y: ${targetY.toFixed(2)}!`);
+}
+
 // ============================================
 // ANIMATION LOOP
 // ============================================
@@ -1330,6 +1553,9 @@ function animate() {
 
   // Don't spawn or update during celebration or before game starts
   if (!isCelebrating && gameStarted) {
+    // Update freeze time effect
+    updateFreezeTime();
+
     // Spawn new balloon based on timer
     if (currentTime - lastSpawnTime > CONFIG.SPAWN_INTERVAL) {
       spawnBalloon();
@@ -1377,6 +1603,14 @@ function init() {
   // Event listeners
   window.addEventListener("keydown", handleKeyPress);
   window.addEventListener("resize", onWindowResize);
+
+  // Mouse and touch event listeners
+  const canvas = document.getElementById('gameCanvas');
+  canvas.addEventListener("click", handlePointerInput);
+  canvas.addEventListener("touchstart", handlePointerInput, { passive: false });
+
+  // Prevent context menu on long press
+  canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
   // Start spawn timer
   lastSpawnTime = performance.now();
@@ -1432,39 +1666,114 @@ function startCountdown() {
 }
 
 // ============================================
-// SPARKLE BURST ON HIT
+// HIT FEEDBACK EFFECTS
+// ============================================
+function addScreenShake(intensity) {
+  cameraShakeIntensity = intensity;
+  cameraShake = 10; // Duration in frames
+}
+
+function updateScreenShake() {
+  if (cameraShake > 0) {
+    cameraShake--;
+    const shakeX = (Math.random() - 0.5) * cameraShakeIntensity * 2;
+    const shakeY = (Math.random() - 0.5) * cameraShakeIntensity * 2;
+    camera.position.x = shakeX;
+    camera.position.y = shakeY;
+    cameraShakeIntensity *= 0.9; // Dampen
+  } else {
+    camera.position.x = 0;
+    camera.position.y = 0;
+  }
+}
+
+function createHitRipple(position) {
+  const rippleGeometry = new THREE.RingGeometry(0.1, 0.2, 32);
+  const rippleMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.8,
+    side: THREE.DoubleSide
+  });
+  const ripple = new THREE.Mesh(rippleGeometry, rippleMaterial);
+
+  ripple.position.copy(position);
+  ripple.userData = { scale: 0.1, life: 1.0 };
+  scene.add(ripple);
+
+  // Animate ripple expansion
+  const animateRipple = () => {
+    ripple.userData.scale += 0.1;
+    ripple.userData.life -= 0.05;
+
+    ripple.scale.set(ripple.userData.scale, ripple.userData.scale, 1);
+    ripple.material.opacity = ripple.userData.life * 0.8;
+
+    if (ripple.userData.life > 0) {
+      requestAnimationFrame(animateRipple);
+    } else {
+      scene.remove(ripple);
+      ripple.geometry.dispose();
+      ripple.material.dispose();
+    }
+  };
+  animateRipple();
+}
+
+// ============================================
+// SPARKLE BURST ON HIT (ENHANCED)
 // ============================================
 function createSparkleBurst(position) {
-  const sparkleCount = 15;
+  const sparkleCount = 20; // Increased count
   for (let i = 0; i < sparkleCount; i++) {
-    const geometry = new THREE.SphereGeometry(0.1, 8, 8);
+    // Mix of sphere and star shapes
+    const geometry = Math.random() > 0.5
+      ? new THREE.SphereGeometry(0.08 + Math.random() * 0.04, 8, 8)
+      : new THREE.ConeGeometry(0.05, 0.15, 4);
+
+    const color = Math.random() > 0.3 ? 0xffff00 : (Math.random() > 0.5 ? 0xffffff : 0xff6600);
     const material = new THREE.MeshBasicMaterial({
-      color: Math.random() > 0.5 ? 0xffff00 : 0xffffff,
+      color: color,
+      transparent: true,
+      opacity: 1.0
     });
     const sparkle = new THREE.Mesh(geometry, material);
 
     sparkle.position.copy(position);
-    const angle = (i / sparkleCount) * Math.PI * 2;
-    const speed = 0.1 + Math.random() * 0.1;
+    const angle = (i / sparkleCount) * Math.PI * 2 + Math.random() * 0.5;
+    const speed = 0.08 + Math.random() * 0.12;
     sparkle.userData = {
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
+      rotSpeed: (Math.random() - 0.5) * 0.3,
       life: 1.0,
+      gravity: -0.005
     };
 
     scene.add(sparkle);
 
-    // Animate sparkle
+    // Enhanced sparkle animation
     const startTime = performance.now();
     function animateSparkle() {
       const elapsed = performance.now() - startTime;
-      if (elapsed > 500 || !sparkle.parent) return;
+      if (elapsed > 600 || !sparkle.parent) return;
 
+      // Apply physics
       sparkle.position.x += sparkle.userData.vx;
       sparkle.position.y += sparkle.userData.vy;
-      sparkle.userData.life -= 0.02;
+      sparkle.userData.vy += sparkle.userData.gravity; // Gravity
+      sparkle.rotation.z += sparkle.userData.rotSpeed;
+
+      // Fade and scale
+      sparkle.userData.life -= 0.015;
       sparkle.material.opacity = sparkle.userData.life;
-      sparkle.material.transparent = true;
+      const scale = sparkle.userData.life;
+      sparkle.scale.set(scale, scale, scale);
+
+      // Twinkle effect
+      if (Math.random() < 0.1) {
+        sparkle.material.opacity = Math.random() * sparkle.userData.life;
+      }
 
       if (sparkle.userData.life > 0) {
         requestAnimationFrame(animateSparkle);
