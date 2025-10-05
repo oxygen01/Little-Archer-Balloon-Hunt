@@ -87,7 +87,7 @@ let countdownShown = false;
 const powerUpIndicatorEl = document.getElementById("powerUpIndicator");
 let arrowCount = 0;
 let currentPowerUp = null;
-const POWER_UP_TYPES = ["big", "fast", "rainbow", "multi", "freeze", "magnet"];
+const POWER_UP_TYPES = ["big", "fast", "rainbow", "multi", "freeze", "magnet", "bouncy", "explosive", "laser", "giant", "tiny", "spiral", "lightning", "confetti"];
 
 // Streak system
 let currentStreak = 0;
@@ -471,6 +471,40 @@ class Arrow {
       this.sizeMultiplier = 1.0;
       this.hitRadius = CONFIG.BALLOON_SIZE * 1.2;
       this.magnetRange = 4.0; // Range to detect balloons
+    } else if (powerUp === "bouncy") {
+      this.speed = 0.4;
+      this.sizeMultiplier = 1.3;
+      this.hitRadius = CONFIG.BALLOON_SIZE;
+      this.bounces = 3; // Number of bounces off screen edges
+    } else if (powerUp === "explosive") {
+      this.speed = 0.35;
+      this.sizeMultiplier = 1.5;
+      this.hitRadius = CONFIG.BALLOON_SIZE * 2.0; // Bigger explosion radius
+    } else if (powerUp === "laser") {
+      this.speed = 1.0; // Super fast
+      this.sizeMultiplier = 0.8;
+      this.hitRadius = CONFIG.BALLOON_SIZE * 0.8;
+    } else if (powerUp === "giant") {
+      this.speed = 0.2; // Slow but massive
+      this.sizeMultiplier = 3.0;
+      this.hitRadius = CONFIG.BALLOON_SIZE * 2.5;
+    } else if (powerUp === "tiny") {
+      this.speed = 0.8; // Fast and small
+      this.sizeMultiplier = 0.4;
+      this.hitRadius = CONFIG.BALLOON_SIZE * 0.5;
+    } else if (powerUp === "spiral") {
+      this.speed = 0.3;
+      this.sizeMultiplier = 1.0;
+      this.hitRadius = CONFIG.BALLOON_SIZE;
+      this.spiralPhase = 0; // For spiral movement
+    } else if (powerUp === "lightning") {
+      this.speed = 0.4;
+      this.sizeMultiplier = 1.2;
+      this.hitRadius = CONFIG.BALLOON_SIZE * 1.5; // Chain lightning effect
+    } else if (powerUp === "confetti") {
+      this.speed = 0.3;
+      this.sizeMultiplier = 1.0;
+      this.hitRadius = CONFIG.BALLOON_SIZE;
     } else {
       this.speed = 0.3;
       this.sizeMultiplier = 1.0;
@@ -493,7 +527,16 @@ class Arrow {
       1 * this.sizeMultiplier,
       8
     );
-    const shaftColor = this.powerUp === "rainbow" ? 0xff00ff : 0x8b4513;
+    let shaftColor = 0x8b4513; // Default brown
+    if (this.powerUp === "rainbow") shaftColor = 0xff00ff;
+    else if (this.powerUp === "laser") shaftColor = 0x00ff00; // Green laser
+    else if (this.powerUp === "lightning") shaftColor = 0xffff00; // Yellow lightning
+    else if (this.powerUp === "explosive") shaftColor = 0xff4500; // Orange red
+    else if (this.powerUp === "bouncy") shaftColor = 0xff1493; // Deep pink
+    else if (this.powerUp === "giant") shaftColor = 0x8b0000; // Dark red
+    else if (this.powerUp === "tiny") shaftColor = 0x00bfff; // Deep sky blue
+    else if (this.powerUp === "spiral") shaftColor = 0x9370db; // Medium purple
+    else if (this.powerUp === "confetti") shaftColor = 0xffd700; // Gold
     const shaftMaterial = new THREE.MeshBasicMaterial({ color: shaftColor });
     const shaft = new THREE.Mesh(shaftGeometry, shaftMaterial);
     shaft.rotation.z = Math.PI / 2; // Point horizontally
@@ -523,11 +566,31 @@ class Arrow {
 
     this.time++;
 
-    // Handle magnet arrow behavior
+    // Handle special arrow behaviors
     if (this.powerUp === "magnet") {
       this.applyMagnetForce();
+    } else if (this.powerUp === "spiral") {
+      // Spiral movement
+      this.spiralPhase += 0.1;
+      this.mesh.position.x += this.speed;
+      this.mesh.position.y += Math.sin(this.spiralPhase) * 0.5;
+    } else if (this.powerUp === "bouncy") {
+      // Bouncy arrow that bounces off top/bottom
+      this.mesh.position.x += this.speed;
+      if (this.mesh.position.y > 8 || this.mesh.position.y < -6) {
+        this.speed *= -0.8; // Bounce and lose some energy
+        if (this.bounces > 0) {
+          this.bounces--;
+        } else {
+          return true; // Remove after bounces are used up
+        }
+      }
+    } else if (this.powerUp === "lightning") {
+      // Zigzag movement like lightning
+      this.mesh.position.x += this.speed;
+      this.mesh.position.y += Math.sin(this.time * 0.3) * 0.2;
     } else {
-      // Move arrow ONLY horizontally (right along X-axis)
+      // Normal movement for all other arrows
       this.mesh.position.x += this.speed;
 
       // Apply spread direction for multi-arrows
@@ -556,6 +619,43 @@ class Arrow {
       if (distance < this.hitRadius) {
         // Hit! Pop the balloon
         balloon.pop();
+
+        // Special power-up effects
+        if (this.powerUp === "explosive") {
+          // Pop nearby balloons too!
+          for (let nearbyBalloon of balloons) {
+            if (nearbyBalloon !== balloon) {
+              const nearbyDx = balloon.mesh.position.x - nearbyBalloon.mesh.position.x;
+              const nearbyDy = balloon.mesh.position.y - nearbyBalloon.mesh.position.y;
+              const nearbyDistance = Math.sqrt(nearbyDx * nearbyDx + nearbyDy * nearbyDy);
+              if (nearbyDistance < 3.0) { // Explosion radius
+                nearbyBalloon.pop();
+              }
+            }
+          }
+        } else if (this.powerUp === "lightning") {
+          // Chain lightning to nearest balloon
+          let nearestBalloon = null;
+          let nearestDistance = Infinity;
+          for (let chainBalloon of balloons) {
+            if (chainBalloon !== balloon) {
+              const chainDistance = balloon.mesh.position.distanceTo(chainBalloon.mesh.position);
+              if (chainDistance < nearestDistance && chainDistance < 4.0) {
+                nearestDistance = chainDistance;
+                nearestBalloon = chainBalloon;
+              }
+            }
+          }
+          if (nearestBalloon) {
+            nearestBalloon.pop();
+          }
+        } else if (this.powerUp === "confetti") {
+          // Extra confetti burst!
+          for (let i = 0; i < 30; i++) {
+            createSingleConfetti(balloon.mesh.position, CONFIG.BALLOON_EMOJIS[Math.floor(Math.random() * CONFIG.BALLOON_EMOJIS.length)]);
+          }
+        }
+
         this.destroy();
         return true; // Signal removal
       }
@@ -619,6 +719,22 @@ class Arrow {
         color = new THREE.Color(0x00ffff); // Cyan for fast arrows
       } else if (this.powerUp === "magnet") {
         color = new THREE.Color(0xff00ff); // Magenta for magnet arrows
+      } else if (this.powerUp === "laser") {
+        color = new THREE.Color(0x00ff00); // Green for laser
+      } else if (this.powerUp === "lightning") {
+        color = new THREE.Color(0xffff00); // Yellow for lightning
+      } else if (this.powerUp === "explosive") {
+        color = new THREE.Color(0xff4500); // Orange red for explosive
+      } else if (this.powerUp === "bouncy") {
+        color = new THREE.Color(0xff1493); // Deep pink for bouncy
+      } else if (this.powerUp === "giant") {
+        color = new THREE.Color(0x8b0000); // Dark red for giant
+      } else if (this.powerUp === "tiny") {
+        color = new THREE.Color(0x00bfff); // Deep sky blue for tiny
+      } else if (this.powerUp === "spiral") {
+        color = new THREE.Color(0x9370db); // Medium purple for spiral
+      } else if (this.powerUp === "confetti") {
+        color = new THREE.Color().setHSL(Math.random(), 1, 0.6); // Random colors for confetti
       } else {
         color = new THREE.Color(0xffaa00); // Default yellow
       }
@@ -692,8 +808,8 @@ class Arrow {
 function shootArrow() {
   arrowCount++;
 
-  // Check for power-up every 5th arrow
-  if (arrowCount % 5 === 0) {
+  // Check for power-up every 3rd arrow
+  if (arrowCount % 3 === 0) {
     currentPowerUp =
       POWER_UP_TYPES[Math.floor(Math.random() * POWER_UP_TYPES.length)];
     powerUpIndicatorEl.classList.add("active");
@@ -1493,8 +1609,8 @@ function handlePointerInput(event) {
 function shootArrowToTarget(targetY) {
   arrowCount++;
 
-  // Check for power-up every 5th arrow
-  if (arrowCount % 5 === 0) {
+  // Check for power-up every 3rd arrow
+  if (arrowCount % 3 === 0) {
     currentPowerUp =
       POWER_UP_TYPES[Math.floor(Math.random() * POWER_UP_TYPES.length)];
     powerUpIndicatorEl.classList.add("active");
